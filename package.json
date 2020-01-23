@@ -1,0 +1,29 @@
+{
+  "name": "test-runner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lgance/test-runner.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lgance/test-runner/issues"
+  },
+  "homepage": "https://github.com/lgance/test-runner#readme",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "module-alias": "^2.2.2",
+    "puppeteer": "^2.0.0"
+  },
+  "_moduleAliases":{
+    "@utils":"utils/index.js",
+    "@actions":"actions"
+  }
+}
