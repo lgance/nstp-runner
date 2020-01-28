@@ -42,7 +42,7 @@ TestRunner.loginActions = async function (){
   let pw  = process.env.PW;
 
   if(id && pw){
-    let consolePw = strMasking("password",pw);
+    let consolePw = strMasking(pw);
 
     console.log(`Attempt to log in [ ID : ${id} ] `);
     console.log(`Attempt to log in [ PW : ${consolePw} ]\r\n `);
