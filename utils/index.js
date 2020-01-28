@@ -1,5 +1,5 @@
 
-exports.wait = (timeout)=>{
+exports.implicitlyWait = (timeout)=>{
   return new Promise((resolve)=>{
       setTimeout(()=>{
         resolve();
@@ -7,16 +7,16 @@ exports.wait = (timeout)=>{
   })
 };
 
-exports.loginCheck = async (page)=>{
+exports.strMasking = (type,password)=>{
+  return password.split('').reduce((prev,curr,index,arr)=>{
+    if(index < 5){return prev+curr;}
+    else{return prev+'*'};
+  },"");
+}
 
-  const result = await page.evaluateHandle(()=> {
-      let result = document.querySelector("input[placeholder=아이디]");
-      return result;
+exports.explicitlyWait = async(selector,time)=>{
+  return new Promise((resolve,reject)=>{
+    
   });
-  console.log(result._context._client._sessionId);
-
-};
-
-
-
+}
 

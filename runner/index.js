@@ -1,5 +1,5 @@
 
-const { wait, loginCheck} = require('@utils');
+const { implicitlyWait, explicitlyWait,strMasking} = require('@utils');
 const puppeteer = require('puppeteer');
 
 const puppeteerOptions = {
@@ -34,16 +34,16 @@ TestRunner.initialize = function(){
 
     console.timeEnd('Initialize');
 }
-
+/**
+ * Chaining Func
+ */
 TestRunner.loginActions = async function (){
   let id = process.env.ID;
   let pw  = process.env.PW;
 
   if(id && pw){
-    let consolePw = pw.split('').reduce((prev,curr,index,arr)=>{
-      if(index < 5){return prev+curr;}
-      else{return prev+"*"}
-    },"");
+    let consolePw = strMasking("password",pw);
+
     console.log(`Attempt to log in [ ID : ${id} ] `);
     console.log(`Attempt to log in [ PW : ${consolePw} ]\r\n `);
 
@@ -52,15 +52,27 @@ TestRunner.loginActions = async function (){
     await this.page.goto(this.url);
 
     console.log('loginCheck');
-    await loginCheck(this.page);
+    await this.loginCheck(this.page);
     console.log('loginCheck after');
 
-    await wait(2500);
+    await implicitlyWait(2500);
     await this.puppeteerClose();  
 
   }else{
     throw new Error('[loginActions] Not Exist Login Configuration : Check your root directory .env')
   }
+
+  return this;
+}
+TestRunner.loginCheck() = async (page)=>{
+
+  const result = await page.evaluateHandle(()=> {
+    let result = document.querySelector("input[placeholder=아이디]");
+    return result;
+});
+console.log(result._context._client._sessionId);
+
+
 }
 TestRunner.puppeteerClose = async function(){
   await this.page.close();
