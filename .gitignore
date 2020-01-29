@@ -105,5 +105,6 @@ dist
 
 # userData
 tmp
-
 test.js
+*.png
+ppap.js

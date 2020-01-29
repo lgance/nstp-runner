@@ -48,14 +48,15 @@ TestRunner.initialize = async function({isHeadless}){
       '--window-position=0,0',
       '--ignore-certifcate-errors',
       '--ignore-certifcate-errors-spki-list',
+      '--lang=ko-KR'
       // '--disable-headless-mode'
     ];
     
     const options = {
       args,
-      headless: true,
+      headless: isHeadless,
       ignoreHTTPSErrors: true,
-      // userDataDir: './tmp',
+      userDataDir: './tmp',
     }
 
     this.browser = await puppeteerExtra.launch(options);
@@ -116,7 +117,7 @@ TestRunner.loginCheck = async (page)=>{
     let result = document.querySelector(cssSelector);
     return result;
   },selector);
-  // console.log(result);
+  console.log(result);
 }
 
 
@@ -140,8 +141,10 @@ TestRunner.run = async function(services){
     const service = services || 'ALL';
 
     await this.initialize({isHeadless:true});
-    await this.loginActions();
 
+    console.time('login');
+    await this.loginActions();
+    console.timeEnd('login');
     service.toUpperCase()==='ALL' ? await this.allServices() : await this.otherServices(service);
   }
   catch(err){
