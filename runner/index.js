@@ -1,6 +1,8 @@
 
-const { implicitlyWait, explicitlyWait,strMasking} = require('@utils');
+const { implicitlyWait, explicitlyWait,strMasking,saftyNavigate} = require('@utils');
 const puppeteer = require('puppeteer');
+const puppeteerExtra = require('puppeteer-extra');
+const plguinStealth = require('puppeteer-extra-plugin-stealth');
 
 const puppeteerOptions = {
   headless:true,
@@ -20,6 +22,9 @@ const testPlatForm = {
   "PU_BETA":process.env.PU_BETA
 }
 
+
+
+
 function logRequest(interceptedRequest){
   console.log('A request was mode : ',interceptedRequest.url());
 }
@@ -28,14 +33,50 @@ function logRequest(interceptedRequest){
 
 function TestRunner(){}
 
-TestRunner.initialize = function(){
-    console.time('Initialize');
-
+TestRunner.initialize = async function({isHeadless}){
+  try{
+    console.time('Init Time');    
+    console.log(`🚧  Initialize Installing ..`)
+    console.log(`🚧  Starting headless Chrome..`)
+    console.log(`🚧  You can exit at any time with Ctrl + C. \n`)
     this.url = testPlatForm[process.env.target.toUpperCase()];
-   
-    console.log(this.url);
+    console.log(`🚧 URL ${this.url}`);
+    const args = [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-infobars',
+      '--window-position=0,0',
+      '--ignore-certifcate-errors',
+      '--ignore-certifcate-errors-spki-list',
+      // '--disable-headless-mode'
+    ];
+    
+    const options = {
+      args,
+      headless: true,
+      ignoreHTTPSErrors: true,
+      // userDataDir: './tmp',
+    }
 
-    console.timeEnd('Initialize');
+    this.browser = await puppeteerExtra.launch(options);
+    this.page = await this.browser.newPage();
+
+    await saftyNavigate(this.page,this.url);
+
+    console.log(`🚧 ${await this.browser.userAgent()}`);
+
+    const userAgent = await this.page.evaluate(() => navigator.userAgent );
+    // If everything correct then no 'HeadlessChrome' sub string on userAgent
+    console.log(userAgent);
+
+
+    console.log(`🚧  Started headless Chrome...`)
+    console.timeEnd('Init Time');
+  }
+  catch(err){
+    console.log(`🚧  An error occurred during headless chrome operation.`);
+    console.log(err);
+  }
 }
 /**
  * Chaining Func
@@ -46,20 +87,17 @@ TestRunner.loginActions = async function (){
 
   if(id && pw){
     let consolePw = strMasking(pw);
-
     console.log(`Attempt to log in [ ID : ${id} ] `);
     console.log(`Attempt to log in [ PW : ${consolePw} ]\r\n `);
 
-    this.browser = await puppeteer.launch(puppeteerOptions);
-    this.page = await this.browser.newPage();
-    await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36');
-    await this.page.goto(this.url);
-
+    // this.browser = await puppeteer.launch(puppeteerOptions);
+    // this.page = await this.browser.newPage();
+    // await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36');
+    // await this.page.goto(this.url);
 
     console.log('loginCheck');
     let retValue = await this.loginCheck(this.page);
     console.log('loginCheck after');
-
     await implicitlyWait(2500);
     await this.puppeteerClose();  
 
@@ -78,13 +116,10 @@ TestRunner.loginCheck = async (page)=>{
     let result = document.querySelector(cssSelector);
     return result;
   },selector);
-  console.log(result._context._client._sessionId);
-  console.log(result);
+  // console.log(result);
 }
-TestRunner.puppeteerClose = async function(){
-  await this.page.close();
-  await this.browser.close();
-}
+
+
 TestRunner.allServices = async function(){
   console.log('allServices')
 }
@@ -93,11 +128,18 @@ TestRunner.otherServices = async function(service){
   console.log('otherService');
 }
 
+
+
+TestRunner.puppeteerClose = async function(){
+  await this.page.close();
+  await this.browser.close();
+}
+
 TestRunner.run = async function(services){
   try{
     const service = services || 'ALL';
 
-    this.initialize();
+    await this.initialize({isHeadless:true});
     await this.loginActions();
 
     service.toUpperCase()==='ALL' ? await this.allServices() : await this.otherServices(service);

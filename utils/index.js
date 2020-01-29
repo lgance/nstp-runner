@@ -1,6 +1,5 @@
-
-
-
+let cloudscraper = require('cloudscraper');
+let scraper = cloudscraper;
 
 // 명시적 대기 
 exports.implicitlyWait = (timeout)=>{
@@ -32,4 +31,56 @@ exports.explicitlyWait = async(selector,time)=>{
     
   });
 }
+
+// scrape Initialize
+async function scrapeCloudflareHttpHeaderCookie(url){
+    new Promise((resolve, reject) =>
+        scraper.get(url, function(error, response, body) {
+            if (error) {
+                reject(error)
+            } else {
+                resolve(response.request.headers)
+            }
+        })
+  )
+}
+
+async function navigatePage( page, naviagteUrl, waitCode){
+  try{
+    let hookHeaders = await scrapeCloudflareHttpHeaderCookie(naviagteUrl);
+     // Anti Cloud Flare
+     await page.setRequestInterception(true)
+     page.on('request', request => {
+         const headers = request.headers()
+         request.continue({ ...hookHeaders })
+     })
+
+     // @ts-ignore
+     await page.goto(naviagteUrl, {
+         waitUntil: ['load', waitCode],
+     })
+
+     return true;
+  }
+  catch(e){
+    console.log('Navigate Error ');
+    console.log('After 5s Retry ');
+    console.log(`Error URL ${naviagteUrl}`);
+    console.log(e);
+    await page.waitFor(5000);
+    
+    return false;
+  }
+};
+
+
+exports.saftyNavigate = async (
+  page,
+  navigateUrl,
+  waitCode = 'networkidle0'
+) =>{
+  let isSuccess = false;
+  while (!isSuccess) isSuccess = await navigatePage(page, navigateUrl, waitCode)
+};
+
 
