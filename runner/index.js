@@ -6,6 +6,8 @@ const puppeteerOptions = {
   headless:true,
   ignoreHTTPSErros:true,
   defaultViewport :null,
+  // defaultViewport : { width : 800, height : 600 },
+  timeout:10000,
   args: ['--start-maximized']
   // slowMo :5,
 }
@@ -30,6 +32,7 @@ TestRunner.initialize = function(){
     console.time('Initialize');
 
     this.url = testPlatForm[process.env.target.toUpperCase()];
+   
     console.log(this.url);
 
     console.timeEnd('Initialize');
@@ -49,10 +52,12 @@ TestRunner.loginActions = async function (){
 
     this.browser = await puppeteer.launch(puppeteerOptions);
     this.page = await this.browser.newPage();
+    await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36');
     await this.page.goto(this.url);
 
+
     console.log('loginCheck');
-    await this.loginCheck(this.page);
+    let retValue = await this.loginCheck(this.page);
     console.log('loginCheck after');
 
     await implicitlyWait(2500);
@@ -64,15 +69,17 @@ TestRunner.loginActions = async function (){
 
   return this;
 }
-TestRunner.loginCheck() = async (page)=>{
+TestRunner.loginCheck = async (page)=>{
 
-  const result = await page.evaluateHandle(()=> {
-    let result = document.querySelector("input[placeholder=아이디]");
+  const selector = 'input[placeholder*=아이디]';
+  await page.screenshot({fullPage:true,path:'screenshot.png'});
+
+  const result = await page.evaluateHandle((cssSelector)=> {
+    let result = document.querySelector(cssSelector);
     return result;
-});
-console.log(result._context._client._sessionId);
-
-
+  },selector);
+  console.log(result._context._client._sessionId);
+  console.log(result);
 }
 TestRunner.puppeteerClose = async function(){
   await this.page.close();
