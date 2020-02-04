@@ -192,9 +192,6 @@ TestRunner.run = async function(services){
     await this.loginActions();
     console.timeEnd('login');
 
-
-
-
     service.toUpperCase()==='ALL' ? await this.allServices() : await this.otherServices(service);
 
     await implicitlyWait(2500);
