@@ -1,5 +1,6 @@
 
 const { implicitlyWait, explicitlyWait,strMasking,safetyNavigate,getProps} = require('@utils');
+const { } = require('./services');
 const puppeteer = require('puppeteer');
 const puppeteerExtra = require('puppeteer-extra');
 const plguinStealth = require('puppeteer-extra-plugin-stealth');
@@ -43,6 +44,29 @@ function logRequest(interceptedRequest){
 
 function TestRunner(){}
 
+/*
+  Starting Point  
+*/
+
+TestRunner.run = async function(services){
+  try{
+    const service = services || 'ALL';
+
+    await this.initialize({isHeadless:false});
+    console.time('login');
+    await this.loginActions();
+    console.timeEnd('login');
+
+    service.toUpperCase()==='ALL' ? await this.allServices() : await this.otherServices(service);
+
+    await implicitlyWait(2500);
+    this.puppeteerClose();
+  }
+  catch(err){
+    console.log(err);
+    process.exit(1);
+  }
+}
 TestRunner.initialize = async function({isHeadless}){
   try{
     console.time('Init Time');    
@@ -143,15 +167,14 @@ TestRunner.loginFinal = async function(){
     else{
       console.log('제대로 못옴');
       console.log('다시 재시도');
-      this.page.waitFor(500);
-      await safetyNavigate(this.page,this.targetURL);
+      // this.page.waitFor(500);
+      // await safetyNavigate(this.page,this.targetURL);
     }
   }
   catch(e){
     console.log(e);
   }
 }
-
 TestRunner.loginCheck = async (page)=>{
   const selector = 'input[placeholder*=아이디]';
   const result = await explicitlyWait(page,selector);
@@ -167,45 +190,14 @@ TestRunner.loginCheck = async (page)=>{
     return false;
   }
 }
-
 TestRunner.allServices = async function(){
   console.log('allServices')
-
 }
-
 TestRunner.otherServices = async function(service){
   console.log('otherService');
-  
 }
-
 TestRunner.puppeteerClose = async function(){
   await this.page.close();
   await this.browser.close();
-}
-
-
-
-/*
-  
-*/
-
-TestRunner.run = async function(services){
-  try{
-    const service = services || 'ALL';
-
-    await this.initialize({isHeadless:true});
-    console.time('login');
-    await this.loginActions();
-    console.timeEnd('login');
-
-    service.toUpperCase()==='ALL' ? await this.allServices() : await this.otherServices(service);
-
-    await implicitlyWait(2500);
-    this.puppeteerClose();
-  }
-  catch(err){
-    console.log(err);
-    process.exit(1);
-  }
 }
 module.exports = TestRunner;

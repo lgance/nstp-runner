@@ -18,10 +18,10 @@
   },
   "homepage": "https://github.com/lgance/test-runner#readme",
   "dependencies": {
-    "cloudscraper": "^4.5.0",
+    "cloudscraper": "^4.6.0",
     "dotenv": "^8.2.0",
     "module-alias": "^2.2.2",
-    "puppeteer": "^2.0.0",
+    "puppeteer": "^3.0.2",
     "puppeteer-extra": "^3.1.9",
     "puppeteer-extra-plugin-stealth": "^2.4.9",
     "request": "^2.88.0"

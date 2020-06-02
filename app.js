@@ -1,7 +1,7 @@
 require('dotenv').config();
 require('module-alias/register');
 
-const testRunner = require('./runner');
+const testRunner = require('./ui-runner');
 testRunner.run();
 
 // const testRunner = async () =>{
