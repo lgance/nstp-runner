@@ -119,6 +119,10 @@ exports.safetyNavigate = async (
   catch(e){console.log(e);}
 };
 // 비밀번호 마스킹 default : password 
+// * 므하하하하
+// ! 호이짜
+// ? 오호
+// TODO 해야합니다
 exports.strMasking = (password,type)=>{
   if(typeof type!=="undefined"){
 
