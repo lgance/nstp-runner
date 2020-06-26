@@ -54,6 +54,27 @@ async function getSafetyElement(page,selector,time){
     if(elementObj===null){
       throw new Error('elementObj is NULL');
     }
+    else{
+      console.log(`[${selector}] is Success`);
+    }
+    return elementObj;
+  }
+  catch(e){
+    console.log(`Find Element Error is Selector > ${selector}`);
+    console.log(`${time} after Retry`);
+    await page.waitFor(time);
+    return false;
+  }
+}
+
+
+async function getSafetyElements(page,selector,time){
+  try{
+    let elementObj = await page.$$(selector);
+
+    if(elementObj===null){
+      throw new Error('elementObj is NULL');
+    }
     return elementObj;
   }
   catch(e){
@@ -68,6 +89,30 @@ async function getSafetyElement(page,selector,time){
 /** Module Exports */
 
 exports.getProps = async (page,element,props)=>{
+  const htmlAttribute = ["accept","accept-charset","accesskey","action","align","async",
+  "autocomplete","autofocus","autoplay","bgcolor","border","charset","chehcked","cite",
+  "class","color","cols","colspan","content","contenteditable","controls","coords","data","data-*","datetime",
+  "default","defer","dir","dirname","disabled","download","draggable","enctype","for","form","formaction","headers",
+  "height","hidden","high","href","hrefllang","http-equiv","id","innerText","innerHTML","ismap","kind","label","lang","list","loop","low","max",
+  "maxlength","media","method","min","multiple","muted","name","novalidate","onabort","onafterprint","onbeforeprint",
+  "onbeforeunload","onblur","oncanplay","oncanplaythrough","onchange","onclick","oncontextmenu","oncopy","oncuechange","oncut",
+  "ondblclick","ondrag","ondragend","ondragenter","ondragleave","ondragstart","ondrop","ondurationchange","onemptied","onended","onerror",
+  "onfocus","onhashchange","oninput","oninvalid","onkeydown","onkeypress","onkeyup","onload","onloadeddata","onloadedmetadata","onloadstart","onmousedown","onmousemove","onmouseout","onmouseover","onmouseup","onmousewhell","onoffline","ononline","onpagehide","onpageshow",
+  "onpaste","onpause","onplay","onplaying","onpopstate","onprogress","onratechange","onreset","onresize","onscroll","onsearch","onseeked",
+  "onselect","onstalled","onstorage","onsubmit","onsuspend","ontimeupdate","ontoggle","onunload","onvolumechange","onwaiting","onwheel",
+  "open","optimum","pattern","placeholder","poster","preload","readonly","rel","require","reversed","rows","rowspan","sandbox","scope",
+  "selected","shape","size","sizes","span","spellcheck","src","srcdoc","srclang","srcset","start","step","style","tabindex","textContent","target","title",
+  "translate","type","usemap","value","width","wrap"];
+
+  if(page===null || page ===undefined || page==="undefined"){
+    console.log('[getProps] page is Undefined or NULL ');
+  }
+  else if(!this.isNULL(element)){
+    console.log('[getProps] element is Undefined or NULL')
+    return false;
+  }
+
+
   let propertyHandle = await element.getProperty(props);
   let propertyValue = await propertyHandle.jsonValue();
 
@@ -77,7 +122,7 @@ exports.getProps = async (page,element,props)=>{
     propertyValue = await propertyHandle.jsonValue();
   }
 
-  return propertyValue;
+  return props==='className' ? "."+propertyValue.replace(/\s/gi,".") : propertyValue;
 }
 exports.implicitlyWait = (timeout)=>{
   return new Promise((resolve)=>{
@@ -107,6 +152,59 @@ exports.explicitlyWait = async(
   return isSuccess;
 };
 
+exports.explicitlyWaits = async(
+  page,
+  selector,
+  count,
+  time
+) => {
+  let isSuccess = false;
+  let _time = time || 2000;
+  let _cnt = count || 3;
+  let isCondition = 0;
+
+  while(!isSuccess && (isCondition < _cnt) ) {
+    isSuccess = await getSafetyElements(page,selector,_time);
+    if(isSuccess!==false){
+        isCondition = 50;
+    }
+    ++isCondition;
+  }
+  return isSuccess;
+};
+
+/**
+ * @description Not Implementation
+ * @param {*} page 
+ * @param {*} selector 
+ * @param {*} forced 
+ */
+
+
+exports.forcedClick = async(page,
+  element,
+  count,
+  time)=>{
+  try{
+    let isSuccess = false;
+    let _time = time || 2000;
+    let _cnt = count || 3;
+    let isCondition  = 0 ;
+
+    while(!isSuccess && (isCondition < _cnt) ) {
+      let result = await nextChangeBtn.click();
+
+      //  isSuccess;
+      
+      if(isSuccess!==false){
+          isCondition = 50;
+      }
+      ++isCondition;
+    }
+    return isSuccess;
+  }
+  catch(err){console.error(err);}
+}
 exports.safetyNavigate = async (
   page,
   navigateUrl,
@@ -118,11 +216,19 @@ exports.safetyNavigate = async (
   }
   catch(e){console.log(e);}
 };
+exports.isNULL = (element)=>{
+  try{
+    if(element==="undefined" || element===undefined || element ==="null" || element===null){
+      return false;
+    }
+    else{
+      return element;
+    }
+}
+catch(err){console.error(e);}
+
+}
 // 비밀번호 마스킹 default : password 
-// * 므하하하하
-// ! 호이짜
-// ? 오호
-// TODO 해야합니다
 exports.strMasking = (password,type)=>{
   if(typeof type!=="undefined"){
 
@@ -133,4 +239,47 @@ exports.strMasking = (password,type)=>{
       else{return prev+'*'};
     },"");
   }
+}
+
+exports.dimmedCheckAndCloseAction = async () => {
+  function getTextEle(e,trimCondition){
+    let eleText = e.textContent === undefined ?  
+              (e.innerText===undefined ? false : e.innerText    )
+           : e.textContent;
+    if(trimCondition===true){return eleText.replace(/\r\n|\n| |\s/gi,"");}
+    else{return eleText;}
+  }
+  function checkDimmedClose(){
+    setTimeout(()=>{
+      if(document.querySelector('.coach-mark') === null){
+          console.warn('🚧 Dimmed Close ');    
+      }
+      else{
+          console.warn('🚧 Dimmed Not Close');
+          // dimmed Close Exception   do Something
+      }
+    },1000);
+  }
+  function consoleDimmedCheck(){
+   let dimmedEle = document.querySelector('.coach-mark');
+   let dimmedCheck = dimmedEle === null ? false : true ;
+  
+   if(dimmedCheck){
+     let diText = dimmedEle.innerText;
+     let regex = /환영합니다.|님,|다시 보지 않기/gi;
+     if(regex.test(diText)===true){
+      console.warn("🚧 Dimmed is output and Close Window.");
+      let dimmedBtnArr = dimmedEle.querySelectorAll('.btn');
+      let dimmedCloseBtn = Array.prototype.filter.call(dimmedBtnArr,(item,index,arr)=> /닫기/gi.test(getTextEle(item,true)))[0];
+       dimmedCloseBtn.click();
+     }
+   }
+   else{
+     console.warn('🚧 Dimmed was not output .Process to the next Step .');
+     return false;
+   }
+  }
+  
+  consoleDimmedCheck();
+  checkDimmedClose();   
 }
