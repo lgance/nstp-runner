@@ -202,7 +202,7 @@ TestRunner.loginFinal = async function(){
 
             let isCondition = 0 ;
             let _cnt = 3;
-            let regExp = /[A-Za-z.]+/g;
+            let regExp = /[A-Za-z.-]+/g;
             while(isCondition < _cnt){
               await nextChangeBtn.click();
               await this.page.waitFor(500);
