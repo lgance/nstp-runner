@@ -1,4 +1,20 @@
 
+/**
+ * .env Sample
+ * path : /test-runner/.env
+ * content
+ * 
+ * ID=auto.test@naver.com
+ * PW=auto1004!
+ * target=pu_beta
+ * PU_BETA=http:beta-pu/
+ * PU=https://console.ncloud.com/
+ * GOV_BETA=http:beta-gov/
+ * GOV=https://console.gov-ncloud.com/
+ * FIN_BETA=https:beta-fin/
+ * FIN=https://console.fin-ncloud.com/
+ */
+
 const { implicitlyWait, explicitlyWait,strMasking,safetyNavigate,getProps,explicitlyWaits,isNULL,forcedClick} = require('@utils');
 const puppeteer = require('puppeteer');
 const puppeteerExtra = require('puppeteer-extra');
@@ -39,28 +55,38 @@ function TestRunner(){}
 
 TestRunner.run = async function(targetNCP){
   try{
-
     await this.initialize({
       target:targetNCP,
       isHeadless:false
     });
-
-    //? Console 까지 이동을 보장 
+    //* Login Actions
     console.time('login');
-
     await this.loginActions();
-
     console.timeEnd('login');
 
+    // * Dimmed Close Actions
+    console.time('DimmedClose');
+    await this.dimmedCloseActions();
+    console.timeEnd('DimmedClose');
 
-    // await implicitlyWait(5500);
-    // this.puppeteerClose();
+    // ! Console Navigate Complete 
+    await this.lnbSelect();
+
   }
   catch(err){
     console.log(err);
     process.exit(1);
   }
 }
+TestRunner.lnbSelect = async function(menuObj){
+  try {
+    console.log('lnbSelect');
+
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 TestRunner.initialize = async function({isHeadless,target}){
   try{
     console.time('Init Time');    
@@ -80,8 +106,6 @@ TestRunner.initialize = async function({isHeadless,target}){
       // '--start-maximized' // 잠시 막음
       // '--disable-headless-mode'
     ];
-    
-  
     const options = {
       args,
       headless: isHeadless && true ,
@@ -90,7 +114,6 @@ TestRunner.initialize = async function({isHeadless,target}){
   // defaultViewport : { width : 800, height : 600 },
       userDataDir: './tmp',
     }
-
     this.currentURL='';
     this.browser = await puppeteerExtra.launch(options);
     this.context = await this.browser.createIncognitoBrowserContext();
@@ -98,15 +121,9 @@ TestRunner.initialize = async function({isHeadless,target}){
 
     // ? Browser Secret Mode 
     this.page = await this.context.newPage();
-
     await safetyNavigate(this.page,this.targetURL);
 
     console.log(`🚧 ${await this.browser.userAgent()}`);
-
-    // If everything correct then no 'HeadlessChrome' sub string on userAgent
-    // const userAgent = await this.page.evaluate(() => navigator.userAgent );
-    // console.log(userAgent);
-
     console.log(`🚧  Started headless Chrome...`)
     console.timeEnd('Init Time');
   }
@@ -115,6 +132,50 @@ TestRunner.initialize = async function({isHeadless,target}){
     throw new Error(e);
   }
 }
+
+// * 딤드 체크 후 종료 하는 액션 
+TestRunner.dimmedCloseActions = async function(){
+  try {
+    const selector = '.coach-mark';
+    const result = await explicitlyWait(this.page,selector);
+    
+    if(result!==false){
+      let diText = await getProps(this.page,result,'innerText');
+      let regex = /환영합니다.|님,|다시 보지 않기/gi;
+      this.page.waitFor(500);
+      if(regex.test(diText)===true){
+        console.warn("🚧 Dimmed is output and Close Window.");
+      }
+    }
+    else{
+      console.warn('🚧 Dimmed was not output .Process to the next Step .');
+      return false;
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// * 로그인 페이지가 맞는지 체크 
+TestRunner.loginCheck = async (page)=>{
+  try{
+  const selector = 'input[placeholder*=아이디]';
+  const result = await explicitlyWait(page,selector);
+
+  if(result!==false){1
+     console.log('🚧 Current Page is Login Page ');
+     let props = await getProps(page,result,'innerHTML');
+     console.log(props);
+     return true;
+  }
+  else{
+    console.log('🚧 Current Page is Not Login Page ');
+    return false;
+  }
+ }
+ catch(e){console.error(e);}
+}
+
 /**
  * Chaining Func
  */
@@ -169,10 +230,13 @@ TestRunner.loginFinal = async function(){
       console.log(`[TargetURL] ${this.targetURL}`);
       const selector = '.loginSecure';
       const loginSecureEle = await explicitlyWait(this.page,selector);
+
+      // * 비밀번호 변경 안내 페이지 인지 
       if(loginSecureEle!==false){
         let props = await getProps(this.page,loginSecureEle,'innerText');
         let regEx = /비밀번호변경 안내|90일마다/gi;
         let changePasswordCheck = regEx.test(props);
+        // * 비밀번호 변경 안내 페이지 버튼이 있는지 
         if(changePasswordCheck){
           const selector = '.loginSecure button';
           const buttons = await explicitlyWaits(this.page,selector);
@@ -193,69 +257,65 @@ TestRunner.loginFinal = async function(){
             return nextItem;
           },Promise.resolve());
 
-          /**
-           * 버튼 클릭 - URL 확인 (Console) -> 아니면 다시 버튼 클릭
-           * 
-           */
+          // forced CLick Actions 
+          // * 다음에 변경하기 버튼이 있는지 
           if(isNULL(nextChangeBtn)){
             console.log('[nextChangeButton Click] ');
 
-            let isCondition = 0 ;
-            let _cnt = 3;
-            let regExp = /[A-Za-z.-]+/g;
-            while(isCondition < _cnt){
-              await nextChangeBtn.click();
-              await this.page.waitFor(500);
-              this.currentURL = await this.page.url();
-              let currentProtocolUrl = this.currentURL.match(regExp)[1];
-              let targetProtocolUrl = this.targetURL.match(regExp)[1];
-
-              console.log(`[Current] ${currentProtocolUrl}  <----> [Target] ${targetProtocolUrl}`)
-
-              if(currentProtocolUrl===targetProtocolUrl){
-                console.log('[Click Success]');
-                isCondition = _cnt + 1; // loop 종료 조건 
+            // * Console로 변경 될 때 까지 클릭 
+            await forcedClick(this.page,nextChangeBtn,"다음에 변경하기",async ()=>{
+              try {
+                let regExp = /[A-Za-z.-]+/g;
+                this.currentURL = await this.page.url();
+                
+                let currentProtocolUrl = this.currentURL.match(regExp)[1];
+                let targetProtocolUrl = this.targetURL.match(regExp)[1];
+                console.log(`[Current] ${currentProtocolUrl}  <----> [Target] ${targetProtocolUrl}`)
+  
+                return currentProtocolUrl===targetProtocolUrl;
+              } catch (error) {
+                console.error(error);
               }
-              else{
-                console.log('[Click Fail]');
-              }
-            }
+            });
+            // let isCondition = 0 ;
+            // let _cnt = 3;
+            // let regExp = /[A-Za-z.-]+/g;
+            // while(isCondition < _cnt){
+            //   await nextChangeBtn.click();
+            //   await this.page.waitFor(500);
+            //   this.currentURL = await this.page.url();
+            //   let currentProtocolUrl = this.currentURL.match(regExp)[1];
+            //   let targetProtocolUrl = this.targetURL.match(regExp)[1];
+
+            //   console.log(`[Current] ${currentProtocolUrl}  <----> [Target] ${targetProtocolUrl}`)
+
+            //   if(currentProtocolUrl===targetProtocolUrl){
+            //     console.log('[Click Success]');
+            //     isCondition = _cnt + 1; // loop 종료 조건 
+            //   }
+            //   else{
+            //     console.log('[Click Fail]');
+            //   }
+            // }
             
           }
         }
       }else{
         throw new Error('[Login Actions] UnKnown Login Error');
       }
-
     }
   }
   catch(e){
     console.log(e);
   }
 }
-TestRunner.loginCheck = async (page)=>{
-  try{
-  const selector = 'input[placeholder*=아이디]';
-  const result = await explicitlyWait(page,selector);
-
-  if(result!==false){1
-     console.log('🚧 Current Page is Login Page ');
-     let props = await getProps(page,result,'innerHTML');
-     console.log(props);
-     return true;
-  }
-  else{
-    console.log('🚧 Current Page is Not Login Page ');
-    return false;
-  }
- }
- catch(e){console.error(e);}
-}
 
 
+// * 종료전 URL 및 페이지 종료 -> 브라우저 종료 
 TestRunner.puppeteerClose = async function(){
   console.log(await this.page.url());
   await this.page.close();
   await this.browser.close();
 }
 module.exports = TestRunner;
+
