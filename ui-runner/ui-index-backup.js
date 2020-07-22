@@ -36,7 +36,7 @@ const testPlatForm = {
  */
 function _LOG(message,logObject){
   console.log(`************* [${message}] *************`);
-  if(typeof logObject!=="undefined" && typeof logObject!==undefined){
+  if(typeof logObject!=="undefined" || typeof logObject!==undefined){
     console.error(logObject);
   }
 }
@@ -65,11 +65,14 @@ function TestRunner(){}
   Starting Point  
 
 
+
+
   Initialize -> loginActions -> dimmedCloseActions -> lnb Select 
 
 */
 
 TestRunner.run = async function(targetNCP){
+  try{
     await this.initialize({
       target:targetNCP,
       isHeadless:false
@@ -79,17 +82,26 @@ TestRunner.run = async function(targetNCP){
     console.time('login');
     if(await this.loginActions()){
     console.timeEnd('login');
-
         // ? Login Success
         // * Dimmed Close Actions
         console.time('DimmedClose');
         await this.dimmedCloseActions();
         console.timeEnd('DimmedClose');
-        
+
+        //  ? Dimmed Close Success 
+        // ! Console Navigate Complete 
+        // let menuObject = {}
+        // await this.lnbSelect('Server','Server');
       }
     else{
-      throw new Error('login Fail');
+      // ! Login Fail 
+      return false;
     }
+  }
+  catch(err){
+    console.log(err);
+    this.puppeteerClose();
+  }
 }
 
 
@@ -122,36 +134,12 @@ TestRunner.run = async function(targetNCP){
  * 
  */
 
-TestRunner.lnbSelect = async function(...param){
-    let menuList = param;
-
-    console.log(menuList);
+TestRunner.lnbSelect = async function(menuObj){
+    console.log(menuobj);
     console.log('lnbSelect');
+}
 
-    let lnbRootSelector = 'div.lnb';
-    let lnbRootElement = await explicitlyWait(this.page,lnbRootSelector);
-    let lnbRootInnerText = await getProps(this.page,lnbRootElement,'innerText');
-
-    console.log(`[lnb innerText Props]   ${lnbRootInnerText}`);
-
-    let lnbExist = document.querySelector('div.lnb').innerHTML;
-    let isLnb = /\sServer\s/g.test(lnbExist);
-    if(!!isLnb){
-      
-
-
-    }
-
-    // ? Step 1
-    // ? Step 2
-    // ? Step 3
-    // ? Step 4
-
-
-
-
-
-
+TestRunner.getRootMenu = async function(menuItem){
 
 }
 
@@ -162,10 +150,11 @@ TestRunner.initialize = async function({isHeadless,target}){
     console.log(`🚧  Initialize Installing ..`)
     console.log(`🚧  Starting headless Chrome..`)
     console.log(`🚧  You can exit at any time with Ctrl + C. \n`)
+    // this.targetURL = testPlatForm[process.env.target.toUpperCase()];
 
     let _target = target.toUpperCase();
     this.targetURL = testPlatForm[_target];
-    console.log(`🚧 Navigate URL ${this.targetURL}`);
+    console.log(`🚧 URL ${this.targetURL}`);
     const args = [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -197,7 +186,6 @@ TestRunner.initialize = async function({isHeadless,target}){
     console.log(`🚧 ${await this.browser.userAgent()}`);
     console.log(`🚧  Started headless Chrome...`)
     console.timeEnd('Init Time');
-
   }
   catch(e){
     console.log(`🚧  An error occurred during headless chrome operation.\r\n`);
@@ -207,6 +195,7 @@ TestRunner.initialize = async function({isHeadless,target}){
 
 // * 딤드 체크 후 종료 하는 액션 
 TestRunner.dimmedCloseActions = async function(){
+  try {
     _LOG('dimmedCloseActions Init');
 
     const selector = '.coach-mark';
@@ -217,13 +206,12 @@ TestRunner.dimmedCloseActions = async function(){
       let diText = await getProps(this.page,dimmedEle,'innerText');
       let regex = /환영합니다.|님,|다시 보지 않기/gi;
       this.page.waitFor(500);
-
       if(regex.test(diText)===true){
         _LOG('dimmedCloseActions Start');
         console.warn("🚧 Dimmed is output and Close Window.");
         let dimmedBtnArr = await explicitlyWaits(dimmedEle,'.btn');
         let dimmedCloseBtn;
-        await Array.prototype.reduce.call(dimmedBtnArr,async(prev,curr)=>{
+        await Array.prototype.reduce.call(dimmedBtnArr,async(prev,curr,index,arr)=>{
           let nextItem = await prev;
           let btnText = await getProps(dimmedEle,curr,'innerText');  
           let diffText = btnText.replace(/\r\n|\n| |\s/gi,"");
@@ -251,8 +239,12 @@ TestRunner.dimmedCloseActions = async function(){
       }
     }
     else{
-      console.warn('🚧 Dimmed was not output .Process to the next Step .');      
+      console.warn('🚧 Dimmed was not output .Process to the next Step .');
+      return false;
     }
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // * 로그인 페이지가 맞는지 체크 
@@ -279,6 +271,7 @@ TestRunner.loginCheck = async (page)=>{
  * Chaining Func
  */
 TestRunner.loginActions = async function (){
+  try{
     _LOG('loginActions');
     let id = process.env.ID;
     let pw  = process.env.PW;
@@ -315,14 +308,17 @@ TestRunner.loginActions = async function (){
       //? Login Page 가 아닌 경우 브라우저 세션에 의해 콘솔로 바로 들어가게 된 경우 
       else{
         _LOG('login Success - not Login Actions');
-        return true;
+        return false;
       }
-    }
-    else{
+    }else{
       throw new Error('[loginActions] Not Exist Login Configuration : Check your root directory .env');
     }
+    return this;
+  }
+  catch(e){console.error(e); return false;}
 }
 TestRunner.loginFinal = async function(){
+  try{
     _LOG('Final Login Check');
     if(this.dashBoardCheck(this.targetURL)){
       _LOG('Final Login Success');
@@ -384,7 +380,6 @@ TestRunner.loginFinal = async function(){
                 return currentProtocolUrl===targetProtocolUrl;
               } catch (error) {
                 console.error(error);
-                return false;
               }
             });
           }
@@ -404,6 +399,11 @@ TestRunner.loginFinal = async function(){
         }
       }
     }
+  }
+  catch(e){
+    console.log(e);
+    return false;
+  }
 }
 
 

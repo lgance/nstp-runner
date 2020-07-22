@@ -75,6 +75,10 @@ async function getSafetyElements(page,selector,time){
     if(elementObj===null){
       throw new Error('elementObj is NULL');
     }
+    else{
+      console.log(`[${selector}] is Success elements `);
+    }
+
     return elementObj;
   }
   catch(e){
@@ -126,9 +130,17 @@ exports.getProps = async (page,element,props)=>{
     propertyHandle = await element.getProperty('outerHTML');
     propertyValue = await propertyHandle.jsonValue();
   }
+  else if(propertyValue==='' && props ==='innerText'){
+    console.log('innerText 의 빈값일 경우 textContents 로 다시 한번 더 찾습니다.');
+    propertyHandle = await element.getProperty('textContents');
+    propertyValue = await propertyHandle.jsonValue();
+  }
 
   return props==='className' ? "."+propertyValue.replace(/\s/gi,".") : propertyValue;
 }
+
+
+
 exports.implicitlyWait = (timeout)=>{
   return new Promise((resolve)=>{
       setTimeout(()=>{
@@ -147,10 +159,13 @@ exports.explicitlyWait = async(
   let _cnt = count || 3;
   let isCondition = 0;
 
+  if(typeof selector===undefined  && typeof selector==="undefined"){
+    return isSuccess;
+  }
   while(!isSuccess && (isCondition < _cnt) ) {
     isSuccess = await getSafetyElement(page,selector,_time);
     if(isSuccess!==false){
-        isCondition = 50;
+        isCondition = _cnt + 1;
     }
     ++isCondition;
   }
@@ -278,6 +293,11 @@ exports.strMasking = (password,type)=>{
   }
 }
 
+
+
+/**
+ * ! Deprecated    This Function used in Test Runner 
+ */
 exports.dimmedCheckAndCloseAction = async () => {
   function getTextEle(e,trimCondition){
     let eleText = e.textContent === undefined ?  
@@ -316,6 +336,9 @@ exports.dimmedCheckAndCloseAction = async () => {
      return false;
    }
   }
+
+
+
   
   consoleDimmedCheck();
   checkDimmedClose();   
