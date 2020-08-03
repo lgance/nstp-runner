@@ -205,6 +205,11 @@ TestRunner.initialize = async function({isHeadless,target}){
   }
 }
 
+TestRunner.navigate = async function(targetURL){
+  console.log(this.page);
+  this.targetURL = targetURL;
+  await safetyNavigate(this.page,targetURL);  
+}
 // * 딤드 체크 후 종료 하는 액션 
 TestRunner.dimmedCloseActions = async function(){
     _LOG('dimmedCloseActions Init');
@@ -255,13 +260,37 @@ TestRunner.dimmedCloseActions = async function(){
     }
 }
 
+TestRunner.createACG = async function(url){
+  
+  console.log('이동합니다.');
+  await this.page.goto(url);
+  await this.page.waitFor(1500);
+  const selector = "#gate > div.btn-wrap > button.btn.btn-lg.light-blue > div";
+  const result = await explicitlyWait(this.page,selector);
+  if(result!==false){
+
+    
+    for(let i=54;i<95;i++){
+        let currentString = `es-acg-auto-create-real-${i}`;
+        await result.click();    
+        const inputSelector = '#app > div > div > div:nth-child(4) > div:nth-child(1) > div > div.modal.show > div > div > div.modal-body > div.box.mt-30 > div.box-body > div > div:nth-child(1) > div > input';
+        await this.page.focus(inputSelector);
+        await this.page.keyboard.type(currentString);
+        const okayBtn = await explicitlyWait(this.page,'#app > div > div > div:nth-child(4) > div:nth-child(1) > div > div.modal.show > div > div > div.modal-body > div.btn-wrap.justify-content-center.mb-40.mt-30 > button.btn.btn-lg.light-blue');
+        await okayBtn.click();
+        await implicitlyWait(1500);
+    }
+
+  }
+
+}
 // * 로그인 페이지가 맞는지 체크 
 TestRunner.loginCheck = async (page)=>{
   try{
   const selector = 'input[placeholder*=아이디]';
   const result = await explicitlyWait(page,selector);
 
-  if(result!==false){1
+  if(result!==false){
      console.log('🚧 Current Page is Login Page ');
      let props = await getProps(page,result,'innerHTML');
      console.log(props);
@@ -324,12 +353,11 @@ TestRunner.loginActions = async function (){
 }
 TestRunner.loginFinal = async function(){
     _LOG('Final Login Check');
-    if(this.dashBoardCheck(this.targetURL)){
+    if(await this.dashBoardCheck(this.targetURL)){
       _LOG('Final Login Success');
       console.log(this.currentURL);
       console.log(this.targetURL);
       console.log('🚧  Attempt to log in Successfully');
-
       return true;
     }
     else{
@@ -424,6 +452,8 @@ TestRunner.dashBoardCheck = async function(targetURL){
 // * 종료전 URL 및 페이지 종료 -> 브라우저 종료 
 TestRunner.puppeteerClose = async function(){
   console.log(await this.page.url());
+
+  await implicitlyWait(2500);
   await this.page.close();
   await this.browser.close();
   // await process.exit(0);

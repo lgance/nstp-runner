@@ -19,33 +19,7 @@ async function scrapeCloudflareHttpHeaderCookie(url){
   )
 }
 
-async function navigatePage( page, naviagteUrl, waitCode){
-  try{
-    let hookHeaders = await scrapeCloudflareHttpHeaderCookie(naviagteUrl);
-    // Anti Cloud Flare
-    await page.setRequestInterception(true)
-    page.on('request', request => {
-        const headers = request.headers()
-        request.continue({ ...hookHeaders })
-    })
 
-    // @ts-ignore
-    await page.goto(naviagteUrl, {
-        waitUntil: ['load', waitCode],
-    })
-
-    return true;
-  }
-  catch(e){
-    console.log('Navigate Error ');
-    console.log('After 5s Retry ');
-    console.log(`Error URL ${naviagteUrl}`);
-    console.log(e);
-    await page.waitFor(5000);
-    
-    return false;
-  }
-};
 
 async function getSafetyElement(page,selector,time){
   try{
@@ -268,6 +242,38 @@ exports.safetyNavigate = async (
   }
   catch(e){console.log(e);}
 };
+
+
+
+async function navigatePage( page, naviagteUrl, waitCode){
+  try{
+    let hookHeaders = await scrapeCloudflareHttpHeaderCookie(naviagteUrl);
+    // Anti Cloud Flare
+    await page.setRequestInterception(true)
+    page.on('request', request => {
+        const headers = request.headers()
+        request.continue({ ...hookHeaders })
+    })
+
+    // @ts-ignore
+    await page.goto(naviagteUrl, {
+        waitUntil: ['load', waitCode],
+    })
+
+    return true;
+  }
+  catch(e){
+    console.log('Navigate Error ');
+    console.log('After 5s Retry ');
+    console.log(`Error URL ${naviagteUrl}`);
+    console.log(e);
+    await page.waitFor(5000);
+    
+    return false;
+  }
+};
+
+
 exports.isNULL = (element)=>{
   try{
     if(element==="undefined" || element===undefined || element ==="null" || element===null){
@@ -280,6 +286,7 @@ exports.isNULL = (element)=>{
 catch(err){console.error(e);}
 
 }
+
 // 비밀번호 마스킹 default : password 
 exports.strMasking = (password,type)=>{
   if(typeof type!=="undefined"){
