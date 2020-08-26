@@ -18,9 +18,11 @@
   },
   "homepage": "https://github.com/lgance/nstp-runner#readme",
   "dependencies": {
+    "@types/form-data": "^2.5.0",
     "axios": "^0.19.2",
     "cloudscraper": "^4.6.0",
     "dotenv": "^8.2.0",
+    "form-data": "^3.0.0",
     "module-alias": "^2.2.2",
     "moment": "^2.27.0",
     "multer": "^1.4.2",
