@@ -19,33 +19,7 @@ async function scrapeCloudflareHttpHeaderCookie(url){
   )
 }
 
-async function navigatePage( page, naviagteUrl, waitCode){
-  try{
-    let hookHeaders = await scrapeCloudflareHttpHeaderCookie(naviagteUrl);
-    // Anti Cloud Flare
-    await page.setRequestInterception(true)
-    page.on('request', request => {
-        const headers = request.headers()
-        request.continue({ ...hookHeaders })
-    })
 
-    // @ts-ignore
-    await page.goto(naviagteUrl, {
-        waitUntil: ['load', waitCode],
-    })
-
-    return true;
-  }
-  catch(e){
-    console.log('Navigate Error ');
-    console.log('After 5s Retry ');
-    console.log(`Error URL ${naviagteUrl}`);
-    console.log(e);
-    await page.waitFor(5000);
-    
-    return false;
-  }
-};
 
 async function getSafetyElement(page,selector,time){
   try{
@@ -75,6 +49,10 @@ async function getSafetyElements(page,selector,time){
     if(elementObj===null){
       throw new Error('elementObj is NULL');
     }
+    else{
+      console.log(`[${selector}] is Success elements `);
+    }
+
     return elementObj;
   }
   catch(e){
@@ -105,10 +83,15 @@ exports.getProps = async (page,element,props)=>{
   "translate","type","usemap","value","width","wrap"];
 
   if(page===null || page ===undefined || page==="undefined"){
-    console.log('[getProps] page is Undefined or NULL ');
+    console.error('[getProps] page is Undefined or NULL ');
+    return false;
+  }
+  else if(props===null || props===undefined || props==="undefined"){
+    console.error('[getProps] props is undefined or NULL');
+    return false;
   }
   else if(!this.isNULL(element)){
-    console.log('[getProps] element is Undefined or NULL')
+    console.error('[getProps] element is Undefined or NULL')
     return false;
   }
 
@@ -121,9 +104,17 @@ exports.getProps = async (page,element,props)=>{
     propertyHandle = await element.getProperty('outerHTML');
     propertyValue = await propertyHandle.jsonValue();
   }
+  else if(propertyValue==='' && props ==='innerText'){
+    console.log('innerText 의 빈값일 경우 textContents 로 다시 한번 더 찾습니다.');
+    propertyHandle = await element.getProperty('textContents');
+    propertyValue = await propertyHandle.jsonValue();
+  }
 
   return props==='className' ? "."+propertyValue.replace(/\s/gi,".") : propertyValue;
 }
+
+
+
 exports.implicitlyWait = (timeout)=>{
   return new Promise((resolve)=>{
       setTimeout(()=>{
@@ -142,10 +133,13 @@ exports.explicitlyWait = async(
   let _cnt = count || 3;
   let isCondition = 0;
 
+  if(typeof selector===undefined  && typeof selector==="undefined"){
+    return isSuccess;
+  }
   while(!isSuccess && (isCondition < _cnt) ) {
     isSuccess = await getSafetyElement(page,selector,_time);
     if(isSuccess!==false){
-        isCondition = 50;
+        isCondition = _cnt + 1;
     }
     ++isCondition;
   }
@@ -181,27 +175,59 @@ exports.explicitlyWaits = async(
  */
 
 
-exports.forcedClick = async(page,
-  element,
-  count,
-  time)=>{
+
+
+/**
+ * 
+ * @param  {...any} param 
+ * * page,element,actions,time,count,conditionCallback
+ */
+exports.forcedClick = async(...param)=>{
   try{
-    let isSuccess = false;
-    let _time = time || 2000;
-    let _cnt = count || 3;
-    let isCondition  = 0 ;
+    let _page = param[0]; // page
+    let _element = param[1]; // element
+    let _actions = param[2] || 'Click Actions';  // actions
+    let _time = typeof param[3] ==='function' ? 500 : param[3] || 500;   // time
+    let _count = typeof param[4] ==='function' ? 3 : param[4]|| 3;    // count
+    let conditionCallback = param[param.length-1];  // last conditioncallback
+    let isCondition = 0 ;
 
-    while(!isSuccess && (isCondition < _cnt) ) {
-      let result = await nextChangeBtn.click();
-
-      //  isSuccess;
-      
-      if(isSuccess!==false){
-          isCondition = 50;
+    if(this.isNULL(_element)){
+      while(isCondition < _count){
+        await _element.click();
+        await _page.waitFor(_time);
+        
+        if(await conditionCallback()){
+          console.log(`[🚧 Click Success] ${_actions}`);
+          isCondition = _count + 1;
+        }
+        else{
+          console.log(`[🚧 Click Fail] ${_actions}`);
+          isCondition++;
+        }
       }
-      ++isCondition;
     }
-    return isSuccess;
+    else{
+      // element is NULL
+      return false;
+    }
+
+    // let isSuccess = false;
+    // let _time = time || 2000;
+    // let _cnt = count || 3;
+    // let isCondition  = 0 ;
+
+    // while(!isSuccess && (isCondition < _cnt) ) {
+    //   let result = await nextChangeBtn.click();
+
+    //   //  isSuccess;
+      
+    //   if(isSuccess!==false){
+    //       isCondition = 50;
+    //   }
+    //   ++isCondition;
+    // }
+    // return isSuccess;
   }
   catch(err){console.error(err);}
 }
@@ -216,6 +242,38 @@ exports.safetyNavigate = async (
   }
   catch(e){console.log(e);}
 };
+
+
+
+async function navigatePage( page, naviagteUrl, waitCode){
+  try{
+    let hookHeaders = await scrapeCloudflareHttpHeaderCookie(naviagteUrl);
+    // Anti Cloud Flare
+    await page.setRequestInterception(true)
+    page.on('request', request => {
+        const headers = request.headers()
+        request.continue({ ...hookHeaders })
+    })
+
+    // @ts-ignore
+    await page.goto(naviagteUrl, {
+        waitUntil: ['load', waitCode],
+    })
+
+    return true;
+  }
+  catch(e){
+    console.log('Navigate Error ');
+    console.log('After 5s Retry ');
+    console.log(`Error URL ${naviagteUrl}`);
+    console.log(e);
+    await page.waitFor(5000);
+    
+    return false;
+  }
+};
+
+
 exports.isNULL = (element)=>{
   try{
     if(element==="undefined" || element===undefined || element ==="null" || element===null){
@@ -228,6 +286,7 @@ exports.isNULL = (element)=>{
 catch(err){console.error(e);}
 
 }
+
 // 비밀번호 마스킹 default : password 
 exports.strMasking = (password,type)=>{
   if(typeof type!=="undefined"){
@@ -241,6 +300,11 @@ exports.strMasking = (password,type)=>{
   }
 }
 
+
+
+/**
+ * ! Deprecated    This Function used in Test Runner 
+ */
 exports.dimmedCheckAndCloseAction = async () => {
   function getTextEle(e,trimCondition){
     let eleText = e.textContent === undefined ?  
@@ -279,6 +343,9 @@ exports.dimmedCheckAndCloseAction = async () => {
      return false;
    }
   }
+
+
+
   
   consoleDimmedCheck();
   checkDimmedClose();   
