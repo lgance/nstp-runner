@@ -1,0 +1,76 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl":".",
+    "paths":{
+      "@utils/*":["util/*"],
+      "*":[
+        "types/*",
+        "bin"
+      ],
+      "dist/*":[
+        "../../dist/*"
+      ]
+    },
+    "importHelpers": false, // tslib 에서 방출된 헬퍼를 import 합니다. (예. __extends, __rest, 등..)
+    "sourceMap": false, //해당하는 .map 파일을 생성합니다.
+    "declaration": true,  //해당하는 .d.ts 파일을 생성합니다.
+    "inlineSourceMap": false, //별도의 파일 대신 소스 맵으로 단일 파일을 내보냅니다
+    "noImplicitAny": false, // any 타입으로 암시한 표현식과 선언에 오류를 발생시킵니다.
+    "module": "commonjs",
+    "target": "es5",
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "ES5","ES6","DOM","DOM.Iterable"
+    ],
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true, //동일 파일 참조에 대해 일관성 없는 대소문자를 비활성화합니다.
+    "noImplicitReturns": true, // 함수의 모든 코드 경로에 반환값이 없을 때 오류를 보고합니다.
+    "noImplicitThis": true, //any 타입으로 암시한 this 표현식에 오류를 보고합니다.
+    "strictNullChecks": true, // 엄격한 null 검사 모드에서는 null과 undefined 값이 모든 타입의 도메인에 있지 않고 그 자체와 any만 할당할 수 있습니다(한 가지 예외사항은 undefined 또한 void에 할당 가능하다는 것입니다).
+    "suppressImplicitAnyIndexErrors": true, //인덱스 시그니처가 없는 객체를 인덱싱하는 경우 --noImplicitAny 억제합니다. 오류를 시그니처 자세한 내용은 #1232 이슈를 참조하세요.
+    "allowSyntheticDefaultImports": true,  //default export가 없는 모듈에서 default imports를 허용합니다. 코드 방출에는 영향을 주지 않으며, 타입 검사만 수행합니다.
+    "esModuleInterop": true,// 런타임 바벨 생태계 호환성을 위한 __importStar와 __importDefault 헬퍼를 내보내고 타입 시스템 호환성을 위해 --allowSyntheticDefaultImports를 활성화합니다.
+    "resolveJsonModule": true, // json 확장자로 import된 모듈을 포함합니다.
+    "emitDecoratorMetadata": true, // 소스에 데코레이터 선언에 대한 설계-타입 메타 데이터를 내보냅니다
+    "experimentalDecorators": true, // ES 데코레이터에 대한 실험적인 지원을 사용하도록 활성화
+    "skipLibCheck": true, // 모든 선언 파일 (*.d.ts)의 타입검사를 건너 뜁니다.
+    // "strict": true,
+    // "alwaysStrict": true,
+    "listEmittedFiles": true, // 컴파일의 일부로 생성된 파일의 이름을 출력 
+  },
+  "include": [
+    "./src/**/*",
+    "./bin/**/*",
+    "./test/**/*"
+  ],
+  "typeRoots": [
+    "./node_modules/@types"
+]
+}
+// {
+//   "compilerOptions": {
+//       "module": "commonjs",
+//       "esModuleInterop": true,
+//       "allowSyntheticDefaultImports": true,
+//       // "strict": true,
+//       "target": "es6",
+//       "noImplicitAny": true,
+//       "moduleResolution": "node",
+//       "sourceMap": true,
+//       "outDir": "dist",
+//       "baseUrl": ".",
+//       "paths": {
+//           "*": [
+//               "node_modules/*",
+//               "src/types/*"
+//           ]
+//       }
+//   },
+//   "include": [
+//       "src/**/*"
+//   ]
+// }
