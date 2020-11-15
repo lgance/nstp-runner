@@ -17,6 +17,7 @@ import 'dotenv/config';
   ?GOV_BETA=
   ?PUB_REAL=console.ncloud.com
   ?PUB_BETA=
+  ?PRODUCTION
 */
 /** fin, fin_Beta,gov,gov_beta,pu,pu_beta */
 function platformValidate(param:string) : void {
@@ -53,13 +54,20 @@ export const paramValidator = ()=>{
       Logger.info('Development Env');
   }
   else{
-    if(process.argv.length!==5){
+    if(process.argv.length <= 5){
       Logger.error('Parameter Validation Error');
       Logger.error('Please set [ID], [PassWord], [TargetPlatForm] ');
       Logger.error(`Current Param ID : ${process.argv[2]}`)    
       Logger.error(`Current Param Password : ${process.argv[3]}`)    
-      Logger.error(`Current Param TestPlatForm : ${process.argv[4]}`)    
+      Logger.error(`Current Param Test Console : ${process.argv[4]}`)  
+      throw new Error('Param Validation Error');  
     }
+    let ID = process.argv[2];
+    var emailReg = /^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$/i;
+    if(!emailReg.test(ID)){
+      throw new Error(`ID Email Error is not Email ${ID}`);
+    }
+
   
     Logger.info(`Automation URL ${platformValidate(process.argv[4])}`);
   

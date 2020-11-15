@@ -3,19 +3,15 @@ import puppeteerExtra from 'puppeteer-extra';
 import stealthPlugin from 'puppeteer-extra-plugin-stealth';
 import cloudscraper  from 'cloudscraper';
 
-import { Logger } from './';
-
-
+import { Logger, Puppeteer } from './';
 
 type NullType = null | undefined | 'undefined' | "null";
-
 /**
  * 
  * Manage browser instances with a singleton.
  *
  */
  let browserSingleton:puppeteer.Browser | undefined;
-
 /**
  * 
  * Manage browser pages instances
@@ -26,7 +22,6 @@ let browserPages = {};
 let browserPage :puppeteer.Page;
 
 /**
- * 
   const options = {
         args,
         headless: isHeadless && true ,
@@ -35,7 +30,8 @@ let browserPage :puppeteer.Page;
        defaultViewport : { width : 800, height : 600 },
         userDataDir: './tmp',
       } 
- */
+*/
+
 interface IOptions{
   isHeadless?: boolean | undefined;
   isDebug?:boolean | undefined;
@@ -53,7 +49,13 @@ export const getBrowser = async(options:IOptions)=>{
 //   }
 //   else{ Logger.debug(`${pageUniqueKey} is Already `)}
 // }
+export const close = async () =>{
+  Logger.debug(`Automation Close this url ${await browserPage.url()}`)  
+  await browserPage.waitFor(5000);
+  await browserPage.close();
+  await browserSingleton?.close();
 
+}
 
 export const getPage = async () : Promise<puppeteer.Page>=>{
   return browserPage;
@@ -67,6 +69,201 @@ export const setPage = async (page:puppeteer.Page) =>{
 // export const getPage = async (pageUniqueKey:string) : puppeteer.Page =>{
 //   return browserPages[pageUniqueKey];
 // }
+
+
+
+
+/**
+ * Console LNB Menu Interface
+ * ex: Compute - Server - Server 
+ * {
+ *  category : compute,
+ *  service : Server,
+ *  menu : Server , 
+ *  
+ * }
+ */
+interface IConsoleMenu{
+  main?:string;  
+}
+
+
+/**
+ * 메뉴의 예시 해당 메뉴 아이템을 DOM을 통해서 가지고 온후 비교 
+ */
+const vpcCompute = {
+  Server : [
+  'Server',
+  'Server Image',
+  'Storage',
+  'Snapshot',
+  'Init Script',
+  'Network Interface',
+  'ACG'
+  ]
+}
+const classicCompute = {
+  Server : [
+    'Server',
+    'Bare Metal Server',
+    'Server Image',
+    'Server Image Builder',
+    'Storage',
+    'Snapshot',
+    'Public IP',
+    'Init Script',
+    'Private Subnet',
+    'Network Interface',
+    'ACG'  
+  ]
+}
+
+
+export const selectedPlatform = async(testplatform:string) =>{
+  Logger.info(`[Selected] Platform ${testplatform}`);
+
+}
+
+/**
+ * BookMark 및 Products & Services로 선택하는 기능 배제 Prototype 끝나면 추가 
+ * 현재는 프로토타입으로 기본 Step 으로 진행 
+ * 또한 북마크 기능이 없기 때문에 북마크가 되어야 있어야 합니다.
+ * 
+ * 
+ * Exception {
+ *   Step 1.  Main Menu, SubMenu 로 이동
+ *   Step 2 . 메뉴이동이 정상적이지 않은 경우 URL로 이동합니다. - 아직 기능 제외
+ * }
+ */
+export const navigateLNBMenu = async(
+  menuString:string[],
+  testplatform:string,
+  environment:string
+)=>{
+  let [mainMenu,subMenu] = menuString;
+  let env = environment.toLowerCase();
+  let platform = testplatform.toLowerCase();
+  let page = await Puppeteer.getPage();
+  Logger.info(`[Click] main Menu <  ${mainMenu}   >`);
+  Logger.info(`[Environment] is ${env}`);
+  /**
+   * mainMenu Click and Status Check 
+   */
+  let mainSelector;
+  if(mainMenu==="Server" && platform==='classic'){
+    mainSelector = '#Server > span';
+  }
+  else if(mainMenu==="Server" && platform==='vpc') {
+    mainSelector = '#VPCServer > span';
+  }
+
+  let serviceMenu = await Puppeteer.explicitlyWait(page,mainSelector);
+  if(serviceMenu!==false){
+   await serviceMenu.click();
+  }
+  else{
+    Logger.error(`Not Found Element ${mainSelector}`);
+
+    // 임시 코드 Bookmark 기능 이 없기 때문에 
+    throw new Error('Not Found Main Menu Element');
+  }
+ 
+
+
+  Logger.info(`[Click] subMenu Menu <   ${subMenu}   >`);
+
+  /** 
+   * active ( main menu Open)
+   * selected (submenu selected)
+   * show ( current page )
+   
+  */
+  let transSubmenuName = subMenu.replace(/\r\n|\n| |\s/gi,"");
+  let submenuSelector ='li.active .slide a';
+  let submenuEle =await Puppeteer.explicitlyWait(page,submenuSelector);
+  if(submenuEle!==false){
+    await submenuEle.click();
+  }
+  else{
+    console.log(submenuEle);
+  }
+  // wait for page update 
+  await page.waitForNavigation();
+
+
+
+  
+
+
+
+
+
+  /**
+   * subMenu Click and Page Check 
+   */
+
+
+
+
+
+
+
+
+}
+/**
+ * goto Direct URL 
+ * @param serviceUrl service FE URL
+ */
+
+export const navigateURL = async (serviceUrl : string ) =>{
+  Logger.info(`navigate Service used Url ${serviceUrl}`);
+
+
+}
+/**
+ * 
+ * @param  {...any} param 
+ * * page,element,actions,time,count,conditionCallback
+ */
+
+export const forcedClick = (...param:any[]) =>{
+  return new Promise(async(resolve,reject)=>{
+    let _page = param[0]; // page
+    let _element = param[1]; // element
+    let _actions = param[2] || 'Click Actions';  // actions
+    let _time = typeof param[3] ==='function' ? 500 : param[3] || 500;   // time
+    let _count = typeof param[4] ==='function' ? 3 : param[4]|| 3;    // count
+    let conditionCallback = param[param.length-1];  // last conditioncallback
+    let isCondition = 0 ;
+
+
+    if(_element==="undefined" || 
+    _element===undefined || 
+    _element ==="null" || 
+    _element===null
+     ){ 
+       //! element is NULL
+       reject(false);
+     }
+    else{
+      while(isCondition < _count){
+        await _element.click();
+        await _page.waitFor(_time);
+        
+        if(await conditionCallback()){
+          Logger.info(`[🚧 Click-Success] ${_actions}`);
+          isCondition = _count + 1;
+        }
+        else{
+          Logger.error(`[🚧 Click-Fail] ${_actions}`);
+          isCondition++;
+        }
+      }
+      resolve(true);
+    }
+  })
+}
+
 export const explicitlyWait = async(
   page:puppeteer.Page,
   selector:string,
@@ -153,49 +350,6 @@ const getSafetyElement = async(
     return false;
   }
 }
-/**
- * 
- * @param  {...any} param 
- * * page,element,actions,time,count,conditionCallback
- */
-
-export const forcedClick = (...param:any[]) =>{
-  return new Promise(async(resolve,reject)=>{
-    let _page = param[0]; // page
-    let _element = param[1]; // element
-    let _actions = param[2] || 'Click Actions';  // actions
-    let _time = typeof param[3] ==='function' ? 500 : param[3] || 500;   // time
-    let _count = typeof param[4] ==='function' ? 3 : param[4]|| 3;    // count
-    let conditionCallback = param[param.length-1];  // last conditioncallback
-    let isCondition = 0 ;
-
-
-    if(_element==="undefined" || 
-    _element===undefined || 
-    _element ==="null" || 
-    _element===null
-     ){ 
-       //! element is NULL
-       reject(false);
-     }
-    else{
-      while(isCondition < _count){
-        await _element.click();
-        await _page.waitFor(_time);
-        
-        if(await conditionCallback()){
-          Logger.info(`[🚧 Click-Success] ${_actions}`);
-          isCondition = _count + 1;
-        }
-        else{
-          Logger.error(`[🚧 Click-Fail] ${_actions}`);
-          isCondition++;
-        }
-      }
-      resolve(true);
-    }
-  })
-}
 
 export const getProps = async (
   page:puppeteer.Page | NullType | puppeteer.ElementHandle ,
@@ -218,11 +372,11 @@ export const getProps = async (
   "translate","type","usemap","value","width","wrap"];
 
   if(page===null || page ===undefined || page==="undefined"){
-    console.error('[getProps] page is Undefined or NULL ');
+    Logger.error('[getProps] page is Undefined or NULL ');
     return false;
   }
   else if(props===null || props===undefined || props==="undefined"){
-    console.error('[getProps] props is undefined or NULL');
+    Logger.error('[getProps] props is undefined or NULL');
     return false;
   }
   /* 
@@ -238,27 +392,18 @@ export const getProps = async (
   let propertyValue:any = await propertyHandle.jsonValue();
 
   if(propertyValue==='' && props ==='innerHTML'){
-    Logger.info('innerHTML 의 빈값일 경우 outerHTML 로 한번 더 찾습니다.');
+    Logger.debug('innerHTML 의 빈값일 경우 outerHTML 로 한번 더 찾습니다.');
     propertyHandle = await element.getProperty('outerHTML');
     propertyValue = await propertyHandle.jsonValue();
   }
   else if(propertyValue==='' && props ==='innerText'){
-    Logger.info('innerText 의 빈값일 경우 textContents 로 다시 한번 더 찾습니다.');
+    Logger.debug('innerText 의 빈값일 경우 textContents 로 다시 한번 더 찾습니다.');
     propertyHandle = await element.getProperty('textContents');
     propertyValue = await propertyHandle.jsonValue();
   }
   return props==='className' ? "."+propertyValue.replace(/\s/gi,".") : propertyValue;
 };
 
-/** TS is not Used Function  */
-function isNULL(element:puppeteer.ElementHandle | NullType ){
-  if(element==="undefined" || element===undefined || element ==="null" || element===null){
-    return false;
-  }
-  else{
-    return element;
-  }
-}
 
 const initialize = async ({isHeadless = false, isDebug = true })=>{
     // * Code for executing request module with DEPREECATED
@@ -369,7 +514,6 @@ export const goto = async (
   }
 }
 
-
 /**
  * * Makes cookies look real.
  */
@@ -385,3 +529,28 @@ export const getImitationCookie = (url:string) => {
       })
   )
 }
+
+/**
+ * not Used Function
+ */
+
+/** TS is not Used Function  */
+function isNULL(element:puppeteer.ElementHandle | NullType ){
+  if(element==="undefined" || element===undefined || element ==="null" || element===null){
+    return false;
+  }
+  else{
+    return element;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+

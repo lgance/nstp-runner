@@ -17,7 +17,8 @@ export const LoginConsole = async ()=>{
     const pw = process.argv[3];
     const url = process.env.url || 'https://console.ncloud.com';
 
-    await Puppeteer.goto(page,url);
+    const isGoto = await Puppeteer.goto(page,url);
+    if(!isGoto) process.exit(1);
 
     /** Login Value Check */    
     if(id && pw){
@@ -34,6 +35,8 @@ export const LoginConsole = async ()=>{
         await setPW(page,pw);
 
         await page.keyboard.press('Enter');
+        
+        // @를 빼먹고 입력하면 page이동이 발생하지않아 waitForNavigation에서 타임아웃
         await page.waitForNavigation();
 
         Logger.info('Login Button Action');
@@ -46,28 +49,30 @@ export const LoginConsole = async ()=>{
           Logger.info(`🚧  Attempt to log in Successfully`);
           Logger.info(`Current URL ${currentURL}`);
           Logger.info(`Navigate URL ${url}`);
+          await dimmedCloseActions(page);
         }
         else{
-          Logger.info(`🚧 Console Navigate Failed`);
-          Logger.info(`🚧 [Check] passwordAfterwards`);
+          Logger.error(`🚧 Console Navigate Failed`);
+          Logger.error(`🚧 [Check] passwordAfterwards`);
           if(await passwordAfterwardsCheck(page,currentURL,url)){
             Logger.info(`🚧 [Check-Success] passwordAfterwards`);
             Logger.info(`🚧 dimmedCloseActions`);
             await dimmedCloseActions(page);
           }
           else{
-
+            Logger.info(`🚧 [Check-Failed] passwordAfterwards`)
+            throw new Error('Login Failed');
           }
           
         }
-
-        await page.waitFor(5000);
-        await page.close();
-        await browser.close();
+        await page.waitFor(500);
+        // await page.close();
+        // await browser.close();
       }
       /** Exist Session Console Navigate Success */
       else{
         Logger.info('Console Navigate Success');
+        return true;
       }
     }
     Puppeteer.setPage(page);
@@ -199,29 +204,38 @@ async function passwordAfterwardsCheck(page:puppeteer.Page,currentURL,navigateUR
 
     /** InValid ID or InValid Password */
     else{
-      const loginRootElement = await Puppeteer.explicitlyWait(page,'.center-wrap.mh-20');
-      let resultCheck;
-      if(loginRootElement!==false){
-        resultCheck = await Puppeteer.getProps(page,loginRootElement,'innerHTML');
-      }
-
-      if(resultCheck.match(/패스워드 오류/gi)){
-        throw new Error('[Login Actions] PassWord Error');
-      }
-      else if(resultCheck.match(/아이디(메일)를 확인해 주세요/gi)){
-        throw new Error('[Login Actions] ID/Mail Error');
-      }
-      else{
-        throw new Error('[Login Actions] UnKnown Login Error');
-      }
+      Logger.error('changePasswordCheck is not Exist');
+      return false;
     }
   }
   else{
-    Logger.error('not Exist loginSecureEle ');
+    Logger.info('not Exist loginSecureEle ');
+    Logger.info('Login Actions Check');
+    const loginRootElement = await Puppeteer.explicitlyWait(page,'.center-wrap.mh-20');
+    let resultCheck;
+    if(loginRootElement!==false){
+      resultCheck = await Puppeteer.getProps(page,loginRootElement,'innerHTML');
+    }
+
+    if(resultCheck.match(/아이디(메일)를 확인해 주세요/gi) ){
+      Logger.error('[Login Actions] ID/Mail Error');
+    }
+    else if(resultCheck.match(/패스워드 오류/gi) &&
+    resultCheck.match(/패스워드 오류 : 0회/gi)){
+      Logger.error(('[Login Actions] ID Error'));
+    }
+    else if(resultCheck.match(/패스워드 오류/gi)){
+      Logger.error(('[Login Actions] PassWord Error'));
+    }
+    else{
+      Logger.error('[Login Actions] UnKnown Login Error');
+    }
     return false;
   }
 
 }
+
+
 async function dashBoardCheck(currentURL,navigateURL) :Promise<boolean> {
     let regExp = /[A-Za-z.-]+/g;
     let currentProtocolUrl = currentURL.match(regExp)[1];

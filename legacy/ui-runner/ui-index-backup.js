@@ -7,11 +7,11 @@
  * ID=auto.test@naver.com
  * PW=auto1004!
  * target=pu_beta
- * PU_BETA=http:beta-pu/
+ * PU_BETA=
  * PU=https://console.ncloud.com/
- * GOV_BETA=http:beta-gov/
+ * GOV_BETA=
  * GOV=https://console.gov-ncloud.com/
- * FIN_BETA=https:beta-fin/
+ * FIN_BETA=
  * FIN=https://console.fin-ncloud.com/
  */
 

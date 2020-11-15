@@ -1,15 +1,17 @@
 import {
   Logger,
   paramValidator,
-  LoginConsole
+  LoginConsole,
+  Puppeteer
 } from './utils';
 
 import {
-  PUB_REAL,PUB_BETA
+  PUBLIC
 } from './app';
 
 const main = async ()=>{
   try{
+    /** NSTP Test Runner Param Validation */
     const TestConsole:string = paramValidator();
     /*
      Safety Navigate Console
@@ -18,10 +20,10 @@ const main = async ()=>{
 
     switch(TestConsole.toUpperCase()){
       case 'PUB_BETA':
-        await PUB_BETA();
+        await PUBLIC('beta');
         break;
       case 'PUB_REAL':
-        console.log(PUB_REAL);
+        await PUBLIC('real');
         break;
       case 'FIN_REAL':
 
@@ -33,6 +35,9 @@ const main = async ()=>{
           Logger.info('Non Selected TestConsole');
         return;
     }
+
+    await Puppeteer.close();
+    
   }
   catch(err){
     Logger.error(err);
@@ -40,3 +45,29 @@ const main = async ()=>{
   }
 }
 main();
+
+/**
+ * .env Sample
+ * 
+  DB_PORT=80     // Data Base Port 
+  DB_HOST=''     // 
+  DB_NAME=''
+  DB_PORT=''
+  DB_USERNAME=''
+  PUBLIC_PATH='../'  // isStepDebug  ScreenShot Image Public Path
+  VIEWS_PATH=''      //  Views Folder used Template Engine 
+  FIN_REAL=console.fin-ncloud.com
+  FIN_BETA=
+  GOV_REAL=console.gov-ncloud.com
+  GOV_BETA=
+  PUB_REAL=https://console.ncloud.com
+  PUB_BETA=
+  PRODUCTION=dev   
+    {
+      dev : A request is issued every time a step is taken.
+      test : Non Request 
+      production : Debug log X Request to Server Next Step 
+    }
+ */
+
+
