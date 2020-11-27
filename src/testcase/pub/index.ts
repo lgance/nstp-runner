@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import { Logger,Puppeteer } from '../../utils';
 
+import { ServerAction } from './actions'
 /*
   enviornment : 테스트 환경 
   1 - PlatForm Check
@@ -18,7 +19,7 @@ export const PUBLIC = async (environment:string,)=>{
   
   let platformEle = await Puppeteer.explicitlyWait(page,platformSelector);
 
-  if(platformEle!==false){
+  if(platformEle!==false && typeof platformEle !=="boolean"){
    let currentPlatform:string = await Puppeteer.getProps(page,platformEle,'innerText');
     Logger.info(`[Current Selected Platform] > ${currentPlatform}`);
     Logger.info(`[testPlatform] ${testPlatform}`);
@@ -36,7 +37,8 @@ export const PUBLIC = async (environment:string,)=>{
     await IAAS({
       environment:environment,
       testPlatform:testPlatform,
-      osImage:"Centos-7.8"
+      // osImage:"Centos-7.8"
+      osImage:"centos-7.8-64"
     });
 
     return true;
@@ -51,7 +53,7 @@ export const PUBLIC = async (environment:string,)=>{
 interface IIAASOptions {
   environment:string;
   testPlatform:string;
-  osImage:string;
+  osImage:string;  
 }
 
 
@@ -59,15 +61,97 @@ interface IIAASOptions {
  * IAAS ( Compute ) Automation Function 
  */
 const IAAS = async (testOptions : IIAASOptions) =>{
-  let {osImage,testPlatform,environment} =testOptions;
-  
-  Logger.info(`[ Test OS Image ] ${osImage}`)
-  Logger.debug(`[ Test Env      ] ${environment}`)
-  Logger.debug(`[ Test Platform ] ${testPlatform}`)
-  await Puppeteer.navigateLNBMenu(['Server','Server'],testPlatform,environment);
+  try{
+    let {osImage,testPlatform,environment} =testOptions;
+    let currPage = await Puppeteer.getPage();
+    
+    Logger.info(`[ Test OS Image ] ${osImage}`)
+    Logger.debug(`[ Test Env      ] ${environment}`)
+    Logger.debug(`[ Test Platform ] ${testPlatform}`)
+
+    /**
+     * Navigate Server Page 
+     */
+    let navigateURL = await Puppeteer.navigateLNBMenu(['Server','Server'],testPlatform,environment);
+    let diffArray = navigateURL.split('/');
+    if(diffArray[diffArray.length-1]==='server' ){
+      Logger.info(`LNB Result ${navigateURL}`);
+      /**
+       * 서버 생성 부터 최종확인 까지는 SPA 페이지로 구성되어있기 때문에 page.waitForNavigation 사용시 timeout 발생 
+       */
+      // # 서버 생성 버튼
+      await ServerAction.ConsoleCreateServer(currPage);
+
+      // # 서버 이미지 선택 
+      await ServerAction.SelectOSImage(currPage,osImage);
+      enum PriceType {
+        Month='Month',
+        Day ='Day'
+      }
+      // # 서버 설정
+      if(testPlatform==='vpc'){
+        await ServerAction.SettingsVPCServer(currPage,{
+          VPC:""
+        });
+      }
+      else if(testPlatform==="classic"){
+        await ServerAction.SettingsServer(currPage,{
+          ServerName:createUUID()
+        });
+      }
+      else{
+        Logger.error(`Test Plat Form Error  ->>>> ${testPlatform} `)
+        throw new Error('is not Exist Test Platform');
+      }
+      
+      // # 인증키 설정 
+      await ServerAction.SetLoginKey(currPage);
+
+      // # 네트워크 접근 설정 
+      await ServerAction.SetACG(currPage);
+
+      // # 최종 확인
+      await ServerAction.Confirm(currPage);
+
+    }
+    else{
+      Logger.info(`LNB Result ${navigateURL}`);  
+    }
+  }
+  catch(err){
+    console.warn('IAAS Test Error');
+    console.error(err);
+  }
+
+};
+
+/**
+ * Temporary Code
+ * 
+ */
+
+function createUUID(): string {
+  let d = new Date().getTime();
+  if (
+    typeof performance !== 'undefined' &&
+    typeof performance.now === 'function'
+  ) {
+    d += performance.now(); // use high -precision timer if available
+  }
+
+  return 'nstp-xxxx-xxxx-4xxx-yxxx'.replace(/[xy]/g, function(c) {
+    var r = (d + Math.random() * 16) % 16 | 0;
+    d = Math.floor(d / 16);
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  })
+ }
 
 
-}
-
-
-
+ /**
+  * 
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = (d + Math.random() * 16) % 16 | 0;
+    d = Math.floor(d / 16);
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  */

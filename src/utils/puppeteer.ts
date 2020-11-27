@@ -135,80 +135,84 @@ export const selectedPlatform = async(testplatform:string) =>{
  *   Step 2 . 메뉴이동이 정상적이지 않은 경우 URL로 이동합니다. - 아직 기능 제외
  * }
  */
-export const navigateLNBMenu = async(
+
+// : Promise<puppeteer.Page>=>{
+
+
+export const navigateLNBMenu = (
   menuString:string[],
   testplatform:string,
   environment:string
-)=>{
-  let [mainMenu,subMenu] = menuString;
-  let env = environment.toLowerCase();
-  let platform = testplatform.toLowerCase();
-  let page = await Puppeteer.getPage();
-  Logger.info(`[Click] main Menu <  ${mainMenu}   >`);
-  Logger.info(`[Environment] is ${env}`);
-  /**
-   * mainMenu Click and Status Check 
-   */
-  let mainSelector;
-  if(mainMenu==="Server" && platform==='classic'){
-    mainSelector = '#Server > span';
-  }
-  else if(mainMenu==="Server" && platform==='vpc') {
-    mainSelector = '#VPCServer > span';
-  }
+) : Promise<string> =>{
+  return new Promise(async(resolve,reject)=>{
 
-  let serviceMenu = await Puppeteer.explicitlyWait(page,mainSelector);
-  if(serviceMenu!==false){
-   await serviceMenu.click();
-  }
-  else{
-    Logger.error(`Not Found Element ${mainSelector}`);
+    let [mainMenu,subMenu] = menuString;
+    let env = environment.toLowerCase();
+    let platform = testplatform.toLowerCase();
+    let page = await Puppeteer.getPage();
+    Logger.info(`[Click] main Menu <  ${mainMenu}   >`);
+    Logger.info(`[Environment] is ${env}`);
+    /**
+     * mainMenu Click and Status Check 
+     */
+    let mainSelector;
+    if(mainMenu==="Server" && platform==='classic'){
+      mainSelector = '#Server > span';
+    }
+    else if(mainMenu==="Server" && platform==='vpc') {
+      mainSelector = '#VPCServer > span';
+    }
 
-    // 임시 코드 Bookmark 기능 이 없기 때문에 
-    throw new Error('Not Found Main Menu Element');
-  }
- 
+    let serviceMenu = await Puppeteer.explicitlyWait(page,mainSelector);
+    if(serviceMenu!==false && typeof serviceMenu!=="boolean"){
+    await serviceMenu.click();
+    }
+    else{
+      Logger.error(`Not Found Element ${mainSelector}`);
 
-
-  Logger.info(`[Click] subMenu Menu <   ${subMenu}   >`);
-
-  /** 
-   * active ( main menu Open)
-   * selected (submenu selected)
-   * show ( current page )
-   
-  */
-  let transSubmenuName = subMenu.replace(/\r\n|\n| |\s/gi,"");
-  let submenuSelector ='li.active .slide a';
-  let submenuEle =await Puppeteer.explicitlyWait(page,submenuSelector);
-  if(submenuEle!==false){
-    await submenuEle.click();
-  }
-  else{
-    console.log(submenuEle);
-  }
-  // wait for page update 
-  await page.waitForNavigation();
-
-
-
+      // 임시 코드 Bookmark 기능 이 없기 때문에 
+      throw new Error('Not Found Main Menu Element');
+    }
   
 
 
+    Logger.info(`[Click] subMenu Menu <   ${subMenu}   >`);
 
+    /** 
+     * active ( main menu Open)
+     * selected (submenu selected)
+     * show ( current page )
+     
+    */
+    let transSubmenuName = subMenu.replace(/\r\n|\n| |\s/gi,"");
+    let submenuSelector ='li.active .slide a';
+    let submenuEle =await Puppeteer.explicitlyWait(page,submenuSelector);
+    if(submenuEle!==false && typeof submenuEle!=="boolean"){
+      await submenuEle.click();
+    }
+    else{
+      console.log(submenuEle);
+      resolve("false");
+    }
+    // wait for page update 
+    await page.waitForNavigation();
 
+    /**
+     * subMenu Click and Page Check 
+     */
+    let currentURL = await (await Puppeteer.getPage()).url();
 
-  /**
-   * subMenu Click and Page Check 
-   */
+    let errorSelector = 'div.page-body.error-box';
 
+    let errorEle = await Puppeteer.explicitlyWait(page,errorSelector,1,1000);
+    if(errorEle===false){
+        resolve(currentURL);
+    }
+    else{
+        resolve('FindConsoleErrorPage');
+    };
 
-
-
-
-
-
-
+  })
 }
 /**
  * goto Direct URL 
@@ -264,12 +268,18 @@ export const forcedClick = (...param:any[]) =>{
   })
 }
 
+/**
+ * @param page : Puppeteer Page
+ * @param selector : HTML Element querySelector
+ * @param count : find count
+ * @param time : loop time 
+ */
 export const explicitlyWait = async(
   page:puppeteer.Page,
   selector:string,
   count:number = 3,
   time:number = 2000,
-) =>{
+): Promise<puppeteer.ElementHandle | boolean >  =>{
   let findElement:boolean | puppeteer.ElementHandle = false;
   let isCondition = 0;
   
@@ -285,7 +295,7 @@ export const explicitlyWaits = async(
   selector:string,
   count:number = 3,
   time:number = 2000,
-) =>{
+) :Promise<puppeteer.ElementHandle[]| boolean> =>{
   let findElements:boolean | puppeteer.ElementHandle[] = false;
   let isCondition = 0;
   
@@ -313,6 +323,9 @@ const getSafetyElements = async(
     if(elementObj===null){
       throw new Error('elementObj is NULL');
     }
+    else if(elementObj.length===0){
+      throw new Error('elementObj is Length 0 ');
+    }
     else{
       Logger.debug(`[${selector}] is getElement Success`);
     }
@@ -320,7 +333,7 @@ const getSafetyElements = async(
   }
   catch(e){
     
-    Logger.debug(`Find Elements Error is Selector > ${selector}`);
+    Logger.debug(`Find Elements Error ${e.message} is Selector > ${selector}`);
     Logger.debug(`${time} after Retry`);
     await waitTime(time);
     return false;
@@ -484,7 +497,7 @@ export const goto = async (
   } = {
           waitUntil: ['load', 'networkidle0'],
           isDebug: true,
-          timeout: 10000,
+          timeout: 10000, 
       },
 ) => {
   try {

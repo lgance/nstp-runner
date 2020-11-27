@@ -87,7 +87,7 @@ async function dimmedCloseActions(page:puppeteer.Page):Promise<boolean>{
   const selector = '.coach-mark';
   const dimmedEle = await Puppeteer.explicitlyWait(page,selector);
 
-  if(dimmedEle!==false){
+  if(dimmedEle!==false && typeof dimmedEle !=="boolean"){
 
     let diText = await Puppeteer.getProps(page,dimmedEle,"innerText");
     let regex = /환영합니다.|님,|다시 보지 않기/gi;
@@ -143,7 +143,7 @@ async function passwordAfterwardsCheck(page:puppeteer.Page,currentURL,navigateUR
   const loginSecureEle = await Puppeteer.explicitlyWait(page,selector);
 
   /** Check passwordChange Request Page */
-  if(loginSecureEle!==false){
+  if(loginSecureEle!==false && typeof loginSecureEle !=="boolean"){
     Logger.info(`🚧 The current page is the password change request page. `);
     Logger.info('🚧 Proceed to change the default setting afterwards.');
 
@@ -213,7 +213,7 @@ async function passwordAfterwardsCheck(page:puppeteer.Page,currentURL,navigateUR
     Logger.info('Login Actions Check');
     const loginRootElement = await Puppeteer.explicitlyWait(page,'.center-wrap.mh-20');
     let resultCheck;
-    if(loginRootElement!==false){
+    if(loginRootElement!==false && typeof loginRootElement !=="boolean"){
       resultCheck = await Puppeteer.getProps(page,loginRootElement,'innerHTML');
     }
 
@@ -256,7 +256,7 @@ async function isLoginPage(page){
     const selector = 'input[placeholder*=아이디]';
     const element:puppeteer.ElementHandle | boolean = await Puppeteer.explicitlyWait(page,selector);
   
-    if(element!==false){
+    if(element!==false && typeof element!=="boolean"){
        Logger.info('🚧 Current Page is Login Page ');
        let props = await Puppeteer.getProps(page,element,'innerHTML');
        if(isDebug){
