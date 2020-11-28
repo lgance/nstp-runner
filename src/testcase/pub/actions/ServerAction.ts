@@ -392,7 +392,6 @@ export const Confirm = async(
 
 }
 
-
 export const ServerOperateCheck = async(
   page:puppeteer.Page,
   findServerHostName:string
@@ -408,6 +407,15 @@ export const ServerOperateCheck = async(
   let tableRowSelector = 'table.tbl.select-tbl > tbody';
   let tableRowEles = await Puppeteer.explicitlyWaits(page,tableRowSelector);
 
+  let maximumTime = 900000;
+  let waitTime = 0;
+  let isCondition = true;
+  // 1 minute
+  let period = 60000;
+
+  // true  90만 > 91
+  while(isCondition && (maximumTime > waitTime)){
+  
   await Array.prototype.reduce.call(tableRowEles,async(prev,curr)=>{
       let nextItem = await prev;
 
@@ -421,13 +429,25 @@ export const ServerOperateCheck = async(
 
       if(deleteSpaceString(currServerHostName)===findServerHostName){
         let operateStatus = await Puppeteer.getProps(page,operateColumn,'innerText');
-          console.log(deleteSpaceString(operateStatus));
-          Logger.debug(`찾았습니다. ${currServerHostName} 은 ${operateStatus} 입니다.`);
-      }
+        let diffOperateStr = deleteSpaceString(operateStatus);
+          Logger.debug(`Server Status Check 
+          Server [ ${currServerHostName} ] 
+          Status [ ${operateStatus} ]`);
 
+          if(diffOperateStr==="운영중"){
+            // loop exit
+            isCondition = false;
+          }
+          else{
+            // wait 1 minute and loop continue
+            await page.waitFor(period);
+            waitTime += period;
+          }
+      }
       return nextItem;
   },Promise.resolve());
 
+  }
 }
 
 /**
