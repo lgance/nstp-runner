@@ -57,6 +57,9 @@ interface IIAASOptions {
 }
 
 
+
+
+let serverHostName = createUUID();
 /**
  * IAAS ( Compute ) Automation Function 
  */
@@ -65,6 +68,9 @@ const IAAS = async (testOptions : IIAASOptions) =>{
     let {osImage,testPlatform,environment} =testOptions;
     let currPage = await Puppeteer.getPage();
     
+    // false 면 바로 운영중 체크 함 
+    let isCreate = false;
+
     Logger.info(`[ Test OS Image ] ${osImage}`)
     Logger.debug(`[ Test Env      ] ${environment}`)
     Logger.debug(`[ Test Platform ] ${testPlatform}`)
@@ -76,43 +82,58 @@ const IAAS = async (testOptions : IIAASOptions) =>{
     let diffArray = navigateURL.split('/');
     if(diffArray[diffArray.length-1]==='server' ){
       Logger.info(`LNB Result ${navigateURL}`);
-      /**
-       * 서버 생성 부터 최종확인 까지는 SPA 페이지로 구성되어있기 때문에 page.waitForNavigation 사용시 timeout 발생 
-       */
-      // # 서버 생성 버튼
-      await ServerAction.ConsoleCreateServer(currPage);
 
-      // # 서버 이미지 선택 
-      await ServerAction.SelectOSImage(currPage,osImage);
-      enum PriceType {
-        Month='Month',
-        Day ='Day'
-      }
-      // # 서버 설정
-      if(testPlatform==='vpc'){
-        await ServerAction.SettingsVPCServer(currPage,{
-          VPC:""
-        });
-      }
-      else if(testPlatform==="classic"){
-        await ServerAction.SettingsServer(currPage,{
-          ServerName:createUUID()
-        });
+
+      /** 서버를 추가로 생성해야 하는 경우  */
+      if(!!isCreate){
+        /**
+         * 서버 생성 부터 최종확인 까지는 SPA 페이지로 구성되어있기 때문에 page.waitForNavigation 사용시 timeout 발생 
+         */
+        // # 서버 생성 버튼
+        await ServerAction.ConsoleCreateServer(currPage);
+
+        // # 서버 이미지 선택 
+        await ServerAction.SelectOSImage(currPage,osImage);
+        enum PriceType {
+          Month='Month',
+          Day ='Day'
+        }
+
+        // # 서버 설정
+        if(testPlatform==='vpc'){
+          await ServerAction.SettingsVPCServer(currPage,{
+            VPC:""
+          });
+        }
+        else if(testPlatform==="classic"){
+          await ServerAction.SettingsServer(currPage,{
+            ServerName:serverHostName
+          });
+        }
+        else{
+          Logger.error(`Test Plat Form Error  ->>>> ${testPlatform} `)
+          throw new Error('is not Exist Test Platform');
+        }
+        
+        // # 인증키 설정 
+        await ServerAction.SetLoginKey(currPage);
+
+        // # 네트워크 접근 설정 
+        await ServerAction.SetACG(currPage);
+
+        // # 최종 확인
+        await ServerAction.Confirm(currPage);
+
+        // # 서버 생성중 확인
+        await ServerAction.ServerOperateCheck(currPage,serverHostName);
+
       }
       else{
-        Logger.error(`Test Plat Form Error  ->>>> ${testPlatform} `)
-        throw new Error('is not Exist Test Platform');
+        // # 서버 운영중 확인 
+       await ServerAction.ServerOperateCheck(currPage,"nstp-ee9f-ef3e-4605-a7f7");
+
       }
-      
-      // # 인증키 설정 
-      await ServerAction.SetLoginKey(currPage);
-
-      // # 네트워크 접근 설정 
-      await ServerAction.SetACG(currPage);
-
-      // # 최종 확인
-      await ServerAction.Confirm(currPage);
-
+   
     }
     else{
       Logger.info(`LNB Result ${navigateURL}`);  

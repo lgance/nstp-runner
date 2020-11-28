@@ -6,6 +6,7 @@ import {
   Puppeteer
 } from '../../../utils'
 
+declare let document:HTMLDocument | null | undefined| any;
 
 
 interface NIC{
@@ -187,8 +188,48 @@ let serverSettingObj = {
   "ServerTypeSpec":async function(){},
   "PriceType":async function(){},
   "ServerCount":async function(){},
-  "ServerName":async function(page:puppeteer.Page,serverName:string){
-    console.log(`${serverName} set Input `);
+  "ServerName":async function(page:puppeteer.Page,serverHostName:string){
+    
+    // const createServerDiv = 'div.server-create-set-up-server';
+    // const createServerEle:any = await Puppeteer.explicitlyWait(page,createServerDiv);
+    // console.log('input viewport test');
+    // console.log(await createServerEle.isIntersectingViewport());
+    // console.log('input viewport test after');
+    // const rowSelector = 'div.box-body div.form-group.row';
+
+
+    // const rootDiv = await Puppeteer.explicitlyVisibleWait(page,rowSelector,3,1000);
+    // if(!rootDiv){
+    //   Logger.error('Root Div is not Visible ');
+    //   throw new Error ('server Settings Error');
+    // }
+    const rowSelector = 'div.server-create-set-up-server div.box-body div.form-group.row';
+    const rowElements = await Puppeteer.explicitlyWaits(page,rowSelector);
+    const findText='서버이름';
+
+    await Array.prototype.reduce.call(rowElements,async(prev,curr,index,arr)=>{
+      let nextItem = await prev;
+      
+      let rowLabelEle = await Puppeteer.explicitlyWait(curr,'label');
+      if(rowLabelEle!==false && typeof rowLabelEle !=='boolean'){
+        let rowText = await Puppeteer.getProps(page,rowLabelEle,'innerText');
+
+        if(rowText.replace(/\r\n| |\s/gi,"")===findText){
+          Logger.debug(`Find ServerName ROW ${rowText} ${serverHostName}`);
+
+          let inputEle:any = await Puppeteer.explicitlyVisibleWait(curr,'input');
+          let inputEleHTML = await Puppeteer.getProps(page,inputEle,'innerHTML');
+          console.log(inputEleHTML);
+
+          await inputEle.type(serverHostName);
+          // await page.focus(inputEle);
+          // await page.keyboard.type(serverHostName);
+        }
+      }
+      return nextItem;
+    },Promise.resolve() );
+
+    console.log(`${serverHostName} set Input `);
   },
   "HostName":async function(){},
   "ProtectedSettings":async function(){},
@@ -203,21 +244,41 @@ export const SettingsServer  = async(
   console.log('Settings Classic Server');
   console.log(`ServerName ${settings.ServerName}`);
 
+  const rowSelector = 'div.server-create-set-up-server div.box-body div.form-group.row';
+
+  const rootDiv:any= await Puppeteer.explicitlyVisibleWait(page,rowSelector,3,1000);
+  if(!rootDiv){
+    Logger.error('Root Div is not Visible ');
+    throw new Error ('server Settings Error');
+  }
+
+
   let settingKeys = Object.keys(serverSettingObj);
   await Array.prototype.reduce.call(settingKeys,async(prev,curr,index,arr)=>{
     let nextItem = await prev;
 
     if(typeof settings[curr]==='undefined'){
-      console.log(`Not Exist  ${curr}`);
+      // console.log(`Not Exist  ${curr}`);
     }
     else{
-      await serverSettingObj[curr](page,curr)
+      await serverSettingObj[curr](page,settings[curr]);
     }
 
     return nextItem;
   },Promise.resolve())
 
   console.log('Complete Settings Server');
+  
+  
+  let buttonEles = await Puppeteer.explicitlyWaits(page,'div.server-create-set-up-server button[type=button]');
+  await Array.prototype.reduce.call(buttonEles,async(prev,curr,index,arr)=>{
+    let nextItem = await prev;
+      let innerText = await Puppeteer.getProps(page,curr,'innerText');
+      if(deleteSpaceString(innerText)==="다음"){
+         await curr.click();
+      }
+    return nextItem;
+  },Promise.resolve());
 
 }
 
@@ -226,6 +287,26 @@ export const SettingsServer  = async(
 export const SetLoginKey = async(
   page:puppeteer.Page
 ) =>{
+  Logger.info('setLoginKey Action');
+
+  let setLoginKeyPageSelector = 'div.server-create-authentication';
+  let visibleButton:any = await Puppeteer.explicitlyVisibleWait(page,setLoginKeyPageSelector);
+
+  if(!visibleButton){
+    Logger.error('setLoginKey Action next Button not Display');
+    throw new Error('setLoginKey Action');
+  }
+  let setLoginKeyButtonSelector = 'div.server-create-authentication button[type=button]'
+  let buttonEles = await Puppeteer.explicitlyWaits(page,setLoginKeyButtonSelector);
+  await Array.prototype.reduce.call(buttonEles,async(prev,curr,index,arr)=>{
+    let nextItem = await prev;
+      let innerText = await Puppeteer.getProps(page,curr,'innerText');
+      if(deleteSpaceString(innerText)==="다음"){
+         await curr.click();
+      }
+    return nextItem;
+  },Promise.resolve());
+
 
 };
 
@@ -233,13 +314,119 @@ export const SetLoginKey = async(
 export const SetACG = async(
   page:puppeteer.Page
 ) =>{
+  Logger.info('setACG Action');
 
+
+  let setACGButtonSelector = 'div.server-create-select-image button[type=button]';
+
+  let buttonEles = await Puppeteer.explicitlyWaits(page,setACGButtonSelector);
+  
+  let isCondition = 0;
+  let count = 3;
+
+  let nextButton = false;
+  let termFlag = true;
+
+  // true 이거나 true 
+  while((isCondition < count) && termFlag ){
+    
+    await Array.prototype.reduce.call(buttonEles,async(prev,curr)=>{
+        let nextItem = await prev;
+
+        let innerText = await Puppeteer.getProps(page,curr,'innerText');
+        if(deleteSpaceString(innerText)==="다음" && await curr.isIntersectingViewport()){
+          //  await curr.click();
+          nextButton = curr;
+          termFlag = false;
+        }
+
+        return nextItem;
+    },Promise.resolve());
+
+    ++isCondition;
+  }
+
+  if(!nextButton){throw new Error('setACG next Button not Found')}
+  else{await nextButton.click();}
 };
 
 
 export const Confirm = async(
   page:puppeteer.Page
 ) => {
+  Logger.info('setConfirm Action');
+  
+
+  let reviewButtonSelector ='div.server-create-review button[type=button]';
+  let visibleButton:any = await Puppeteer.explicitlyVisibleWait(page,reviewButtonSelector);
+
+  if(!visibleButton){
+    Logger.error('ReView Action Server Create Button not Display');
+    throw new Error('setConfirm Action');
+  }
+
+  let buttonEles = await Puppeteer.explicitlyWaits(page,reviewButtonSelector);
+
+  await Array.prototype.reduce.call(buttonEles,async(prev,curr)=>{
+      let nextItem = await prev;
+        let innerText = await Puppeteer.getProps(page,curr,'innerText');
+        console.log(innerText);
+        if(deleteSpaceString(innerText)==="서버생성"){
+          await curr.click();
+          let result = await curr.isIntersectingViewport();
+          console.log(result);
+        }
+      return nextItem;
+    },Promise.resolve());
+
+
+  let modalBtnSelector = 'div.modal-dialog button[type=button]';
+  let modalDialogBtn = await Puppeteer.explicitlyVisibleWait(page,modalBtnSelector);
+    
+  if(modalDialogBtn!==false && typeof modalDialogBtn!=="boolean"){
+    await modalDialogBtn.click();
+  }
+  else{
+    Logger.error('Not Display Modal Dialog Button');
+  }
+
+}
+
+
+export const ServerOperateCheck = async(
+  page:puppeteer.Page,
+  findServerHostName:string
+)=>{
+
+  let isVisibleTable = await Puppeteer.explicitlyVisibleWait(page,'table.tbl.select-tbl');
+
+  if(!isVisibleTable){
+    Logger.error('ServerOperateCheck Error is not Display table');
+    throw new Error('ServerOperatedCheck is not Display table HTML');
+  }
+
+  let tableRowSelector = 'table.tbl.select-tbl > tbody';
+  let tableRowEles = await Puppeteer.explicitlyWaits(page,tableRowSelector);
+
+  await Array.prototype.reduce.call(tableRowEles,async(prev,curr)=>{
+      let nextItem = await prev;
+
+      let notDetailRow:any = await Puppeteer.explicitlyWait(curr,'tr');
+
+      let notDetailRowColumn = await Puppeteer.explicitlyWaits(notDetailRow,'td');
+      let serverHostColumn = notDetailRowColumn[1];
+      let operateColumn = notDetailRowColumn[4];
+
+      let currServerHostName = await Puppeteer.getProps(page,serverHostColumn,'innerText');
+
+      if(deleteSpaceString(currServerHostName)===findServerHostName){
+        let operateStatus = await Puppeteer.getProps(page,operateColumn,'innerText');
+          console.log(deleteSpaceString(operateStatus));
+          Logger.debug(`찾았습니다. ${currServerHostName} 은 ${operateStatus} 입니다.`);
+      }
+
+      return nextItem;
+  },Promise.resolve());
 
 }
 

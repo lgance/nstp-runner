@@ -306,6 +306,49 @@ export const explicitlyWaits = async(
   return findElements;
 
 }
+
+export const explicitlyVisibleWait = async(
+  page:puppeteer.Page,
+  selector:string,
+  count:number = 3,
+  time:number = 2000,
+): Promise<puppeteer.ElementHandle | boolean >  =>{
+  let findElement:boolean | puppeteer.ElementHandle = false;
+  let isCondition = 0;
+  
+  while(!findElement && (isCondition < count)) {
+    findElement = await getSafetyVisibleElement(page,selector,time);
+    ++isCondition;
+  }
+  return findElement;
+}
+const getSafetyVisibleElement = async(
+  page:puppeteer.Page | puppeteer.ElementHandle,
+  selector:string,
+  time:number
+)=>{
+  try{
+    let elementObj = await page.$(selector);
+    if(elementObj===null){
+      throw new Error('elementObj is NULL');
+    }
+    else if((await elementObj.isIntersectingViewport())===false){
+      throw new Error('elementObj is not Visible');
+    }
+    else{
+      Logger.debug(`[${selector}] is getVisibleElement Success`);
+    }
+    return elementObj;
+  }
+  catch(e){
+    Logger.debug(`Find Element Visible Error is Selector > ${selector}`);
+    Logger.debug(`${time} after Retry`);
+    await waitTime(time);
+    return false;
+  }
+}
+
+
 function waitTime(time){
   return new Promise((resolve,reject)=>{
     setTimeout(()=>{
@@ -327,7 +370,7 @@ const getSafetyElements = async(
       throw new Error('elementObj is Length 0 ');
     }
     else{
-      Logger.debug(`[${selector}] is getElement Success`);
+      Logger.debug(`[${selector}] is getElements Success`);
     }
     return elementObj;
   }
@@ -363,6 +406,33 @@ const getSafetyElement = async(
     return false;
   }
 }
+export const getButton= async(
+  page:puppeteer.Page,
+  buttonName:string
+)=>{
+
+}
+
+// export async function getButton(page: puppeteer.Page, buttonName: string) {
+//   try {
+//     const buttons = await page.$$('button.btn');
+//     for (const button of buttons) {
+//       if (await button.isIntersectingViewport()) {
+//         const btnName: any = await(await button.getProperty('textContent')).jsonValue();
+//         if (btnName.includes(buttonName)) {
+//           return button;
+//         }
+//       }
+//     }
+//   } catch(e) {
+//     console.log(e);
+//     return false;
+//   }
+// }
+
+
+
+
 
 export const getProps = async (
   page:puppeteer.Page | NullType | puppeteer.ElementHandle ,
@@ -542,6 +612,8 @@ export const getImitationCookie = (url:string) => {
       })
   )
 }
+
+
 
 /**
  * not Used Function
