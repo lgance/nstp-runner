@@ -38,7 +38,8 @@ export const PUBLIC = async (environment:string,)=>{
       environment:environment,
       testPlatform:testPlatform,
       // osImage:"Centos-7.8"
-      osImage:"centos-7.8-64"
+      // osImage:"centos-7.8-64"
+      osImage:"ubuntu-18.04"
     });
 
     return true;
@@ -69,7 +70,7 @@ const IAAS = async (testOptions : IIAASOptions) =>{
     let currPage = await Puppeteer.getPage();
     
     // false 면 바로 운영중 체크 함 
-    let isCreate = false;
+    let isCreate = true;
 
     Logger.info(`[ Test OS Image ] ${osImage}`)
     Logger.debug(`[ Test Env      ] ${environment}`)
@@ -142,6 +143,7 @@ const IAAS = async (testOptions : IIAASOptions) =>{
   catch(err){
     console.warn('IAAS Test Error');
     console.error(err);
+    console.error(err.message);
   }
 
 };

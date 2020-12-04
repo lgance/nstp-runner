@@ -5,6 +5,10 @@ import cloudscraper  from 'cloudscraper';
 
 import { Logger, Puppeteer } from './';
 
+
+import path from 'path';
+
+const debugPath = path.join(__dirname,'../../img/');
 type NullType = null | undefined | 'undefined' | "null";
 /**
  * 
@@ -42,15 +46,49 @@ export const getBrowser = async(options:IOptions)=>{
   return browserSingleton;
 }
 
+export const confirmModalDialog = async (
+  page:puppeteer.Page
+) =>{
 
-// export const setPage = async(page:puppeteer.Page,pageUniqueKey:string) =>{
-//   if(!browserPages[pageUniqueKey]){
-//     browserPages = page;
-//   }
-//   else{ Logger.debug(`${pageUniqueKey} is Already `)}
-// }
+
+  let modalDialogBodySelector = 'div.modal-dialog .modal-body';
+  let modaloDialogBody:any = await Puppeteer.explicitlyVisibleWait(page,modalDialogBodySelector);
+  
+  
+  
+   if(modaloDialogBody!==false && typeof modaloDialogBody!=='boolean'){
+    let modalInnerText = await Puppeteer.getProps(page,modaloDialogBody,'innerText');
+    let regex = /[[0-9]+]/g;
+    let errorCode = modalInnerText.match(regex);
+    if(errorCode !== null && errorCode[0].length >=3){
+      // Error Code Check 
+      console.log(errorCode[0]);
+    }
+    else{
+      // not Error Code  -> Confirm Step 
+      let modalDialogBtnSelector = 'div.modal-dialog .modal-body button[type=button]';
+      let modalDialogBtn = await Puppeteer.explicitlyVisibleWait(page,modalDialogBtnSelector);
+    
+      if(modalDialogBtn!==false && typeof modalDialogBtn!=='boolean'){
+        await modalDialogBtn.click();
+      }
+      else{
+        Logger.error('Not Display Modal Dialog Button');
+      }
+    }
+  }
+}
+
+
+export const modalCapture = async (page:puppeteer.Page,modalName:string)=>{
+  await browserPage.screenshot({path:debugPath+modalName+'.png'});
+}
+
 export const close = async () =>{
   Logger.debug(`Automation Close this url ${await browserPage.url()}`)  
+  await browserPage.screenshot({path:debugPath+'nstp_screen.png'})
+  console.log(debugPath);
+
   await browserPage.waitFor(5000);
   await browserPage.close();
   await browserSingleton?.close();
@@ -268,6 +306,52 @@ export const forcedClick = (...param:any[]) =>{
   })
 }
 
+
+export const getVisibleButton = (
+  page:puppeteer.Page,
+  selector:string,
+  findText:string,
+  count: number = 3,
+  tiime:number =2000,
+) : Promise<puppeteer.ElementHandle | boolean >=>{
+  return new Promise(async(resolve,reject)=>{
+    try{
+      let returnButton :boolean | puppeteer.ElementHandle = false;
+      let isCondition = 0;
+
+      let termFlag = true;
+      let buttonEles = await Puppeteer.explicitlyWaits(page,selector);
+        
+        while((isCondition < count ) && termFlag ) {
+          await Array.prototype.reduce.call(buttonEles,async(prev,curr)=>{
+            let nextItem = await prev;
+            
+            let innerText = await Puppeteer.getProps(page,curr,'innerText');
+            let deleteSpaceText = innerText.replace(/\r\n|\n| |\s/gi,"");
+
+            if(deleteSpaceText===findText && await curr.isIntersectingViewport()){
+              returnButton = curr;
+              termFlag = false;
+            }
+
+            return nextItem;
+          },Promise.resolve());
+
+          ++isCondition;
+        }
+        if(returnButton===false){
+          reject(false);
+        } 
+        else{
+          resolve(returnButton);
+        }
+     }
+     catch(err){
+       reject(err.message);
+     }
+  })
+}
+
 /**
  * @param page : Puppeteer Page
  * @param selector : HTML Element querySelector
@@ -288,6 +372,7 @@ export const explicitlyWait = async(
     ++isCondition;
   }
   return findElement;
+  
 }
 
 export const explicitlyWaits = async(

@@ -289,6 +289,7 @@ export const SetLoginKey = async(
 ) =>{
   Logger.info('setLoginKey Action');
 
+  // # Page Display Check 
   let setLoginKeyPageSelector = 'div.server-create-authentication';
   let visibleButton:any = await Puppeteer.explicitlyVisibleWait(page,setLoginKeyPageSelector);
 
@@ -296,17 +297,18 @@ export const SetLoginKey = async(
     Logger.error('setLoginKey Action next Button not Display');
     throw new Error('setLoginKey Action');
   }
-  let setLoginKeyButtonSelector = 'div.server-create-authentication button[type=button]'
-  let buttonEles = await Puppeteer.explicitlyWaits(page,setLoginKeyButtonSelector);
-  await Array.prototype.reduce.call(buttonEles,async(prev,curr,index,arr)=>{
-    let nextItem = await prev;
-      let innerText = await Puppeteer.getProps(page,curr,'innerText');
-      if(deleteSpaceString(innerText)==="다음"){
-         await curr.click();
-      }
-    return nextItem;
-  },Promise.resolve());
 
+  // Login Key Next Button Display Check 
+  let setLoginKeyButtonSelector = 'div.server-create-authentication button[type=button]'
+  let nextButton:boolean | puppeteer.ElementHandle = await Puppeteer.getVisibleButton(page,setLoginKeyButtonSelector,"다음",2,1000);
+  
+  if(typeof nextButton !=='boolean'){
+    await nextButton.click();
+  }
+  else{
+    Logger.error(`setLoginKey Action next Button not Display ${nextButton}`);
+    throw new Error('setLoginKey Action');
+  }
 
 };
 
@@ -316,38 +318,55 @@ export const SetACG = async(
 ) =>{
   Logger.info('setACG Action');
 
-
+  // div.server-create-select-image FE에서 재사용중으로 바로 button 으로 체크 
+  // SetACG Next Button Display Check 
   let setACGButtonSelector = 'div.server-create-select-image button[type=button]';
-
-  let buttonEles = await Puppeteer.explicitlyWaits(page,setACGButtonSelector);
+  let nextButton:boolean | puppeteer.ElementHandle = await Puppeteer.getVisibleButton(page,setACGButtonSelector,"다음");
   
-  let isCondition = 0;
-  let count = 3;
-
-  let nextButton = false;
-  let termFlag = true;
-
-  // true 이거나 true 
-  while((isCondition < count) && termFlag ){
-    
-    await Array.prototype.reduce.call(buttonEles,async(prev,curr)=>{
-        let nextItem = await prev;
-
-        let innerText = await Puppeteer.getProps(page,curr,'innerText');
-        if(deleteSpaceString(innerText)==="다음" && await curr.isIntersectingViewport()){
-          //  await curr.click();
-          nextButton = curr;
-          termFlag = false;
-        }
-
-        return nextItem;
-    },Promise.resolve());
-
-    ++isCondition;
+  if(typeof nextButton !=='boolean'){
+    await nextButton.click();
+  }
+  else{
+    Logger.error(`setACG Action next Button not Display ${nextButton}`);
+    throw new Error('setACG next Button not Found');
   }
 
-  if(!nextButton){throw new Error('setACG next Button not Found')}
-  else{await nextButton.click();}
+
+  
+  // let setACGButtonSelector = 'div.server-create-select-image button[type=button]';
+
+  // let buttonEles = await Puppeteer.explicitlyWaits(page,setACGButtonSelector);
+  
+  // let isCondition = 0;
+  // let count = 3;
+
+  // let nextButton = false;
+  // let termFlag = true;
+
+  // // true 이거나 true 
+  // while((isCondition < count) && termFlag ){
+    
+  //   await Array.prototype.reduce.call(buttonEles,async(prev,curr)=>{
+  //       let nextItem = await prev;
+
+  //       let innerText = await Puppeteer.getProps(page,curr,'innerText');
+  //       // console.log(deleteSpaceString(innerText));
+  //       // console.log(await curr.isIntersectingViewport());
+  //       if(deleteSpaceString(innerText)==="다음" && await curr.isIntersectingViewport()){
+  //         //  await curr.click(); 
+          
+  //         nextButton = curr;
+  //         termFlag = false;
+  //       }
+
+  //       return nextItem;
+  //   },Promise.resolve());
+
+  //   ++isCondition;
+  // }
+
+  // if(!nextButton){throw new Error('setACG next Button not Found')}
+  // else{await nextButton.click();}
 };
 
 
@@ -370,11 +389,12 @@ export const Confirm = async(
   await Array.prototype.reduce.call(buttonEles,async(prev,curr)=>{
       let nextItem = await prev;
         let innerText = await Puppeteer.getProps(page,curr,'innerText');
+
         console.log(innerText);
-        if(deleteSpaceString(innerText)==="서버생성"){
+        console.log(await curr.isIntersectingViewport());
+
+        if(deleteSpaceString(innerText)==="서버생성" && await curr.isIntersectingViewport()){
           await curr.click();
-          let result = await curr.isIntersectingViewport();
-          console.log(result);
         }
       return nextItem;
     },Promise.resolve());
@@ -384,6 +404,7 @@ export const Confirm = async(
   let modalDialogBtn = await Puppeteer.explicitlyVisibleWait(page,modalBtnSelector);
     
   if(modalDialogBtn!==false && typeof modalDialogBtn!=="boolean"){
+    await Puppeteer.modalCapture(page,'serverCreate Confirm');
     await modalDialogBtn.click();
   }
   else{
