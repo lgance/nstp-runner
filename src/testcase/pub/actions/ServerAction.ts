@@ -71,6 +71,58 @@ function deleteSpaceString(string){
   return typeof string!=='undefined' ? string.replace(/\r\n|\n| |\s/gi,"") : false
 }
 
+
+
+
+ 
+
+
+// 서버 정지
+export const ServerStop = async(
+  page:puppeteer.Page,
+  serverHostName:string
+) => {
+
+
+}
+
+// 서버 스펙 변경 
+export const ServerSpecChange = async(
+  page:puppeteer.Page,
+  serverHostName:string
+) => {
+
+}
+
+// 서버 재시작
+export const ServerRestart = async(
+  page:puppeteer.Page,
+  serverHostName:string
+) => {
+
+}
+
+// 공인 IP 할당 및 확인
+export const ServerAssociatedPublicIPandCheck = async(
+  page:puppeteer.Page,
+  serverHostName:string
+) => {
+
+}
+// 공인 IP 할당 및 접속 
+export const ServerAssociatedPublicIPandConnect = async(
+  page:puppeteer.Page,
+  serverHostName:string
+) => {
+
+}
+
+
+
+
+
+
+
 export const ConsoleCreateServer = async (page:puppeteer.Page) =>{
   const consoleHeaderBtnSelector = 'div.page-header button';
   const btnArray = await Puppeteer.explicitlyWaits(page,consoleHeaderBtnSelector);
@@ -374,9 +426,13 @@ export const Confirm = async(
   page:puppeteer.Page
 ) => {
   Logger.info('setConfirm Action');
-  
+
+  // await page.keyboard.down('PageDown');  
+  // // await page.keyboard.press('PageDown');  
+  // await page.keyboard.up('PageDown');  
 
   let reviewButtonSelector ='div.server-create-review button[type=button]';
+  // let reviewButtonSelector = 'div.server-create-review .btn.btn-lg.success';
   let visibleButton:any = await Puppeteer.explicitlyVisibleWait(page,reviewButtonSelector);
 
   if(!visibleButton){
@@ -393,8 +449,14 @@ export const Confirm = async(
         console.log(innerText);
         console.log(await curr.isIntersectingViewport());
 
-        if(deleteSpaceString(innerText)==="서버생성" && await curr.isIntersectingViewport()){
+        if(deleteSpaceString(innerText)==="서버생성" ){
           await curr.click();
+          // if(await curr.isIntersectingViewport()){
+          //   await curr.click();
+          // }
+          // else{
+          //   console.log('Confirm Review Create Button is not Displayed');
+          // }
         }
       return nextItem;
     },Promise.resolve());
@@ -415,7 +477,8 @@ export const Confirm = async(
 
 export const ServerOperateCheck = async(
   page:puppeteer.Page,
-  findServerHostName:string
+  findServerHostName:string,
+  checkFlag=false
 )=>{
 
   let isVisibleTable = await Puppeteer.explicitlyVisibleWait(page,'table.tbl.select-tbl');
@@ -432,9 +495,12 @@ export const ServerOperateCheck = async(
   let waitTime = 0;
   let isCondition = true;
   // 1 minute
-  let period = 60000;
+  // let period = 60000;
+  // 30 minute
+  let period = 30000;
+  let currentServerState='unKnown';
 
-  // true  90만 > 91
+  // true  90만 > 91   true && 900000  > 0 
   while(isCondition && (maximumTime > waitTime)){
   
   await Array.prototype.reduce.call(tableRowEles,async(prev,curr)=>{
@@ -451,6 +517,7 @@ export const ServerOperateCheck = async(
       if(deleteSpaceString(currServerHostName)===findServerHostName){
         let operateStatus = await Puppeteer.getProps(page,operateColumn,'innerText');
         let diffOperateStr = deleteSpaceString(operateStatus);
+        currentServerState = diffOperateStr;
           Logger.debug(`Server Status Check 
           Server [ ${currServerHostName} ] 
           Status [ ${operateStatus} ]`);
@@ -458,8 +525,12 @@ export const ServerOperateCheck = async(
           if(diffOperateStr==="운영중"){
             // loop exit
             isCondition = false;
+            
           }
-          else{
+          else if(checkFlag===true){
+            isCondition = false;
+          }
+          else {
             // wait 1 minute and loop continue
             await page.waitFor(period);
             waitTime += period;
@@ -469,7 +540,33 @@ export const ServerOperateCheck = async(
   },Promise.resolve());
 
   }
+  // Server Create Timeout Exception
+  if(maximumTime < waitTime){
+    Logger.error(`Server Create Timeout ${currentServerState}`);
+    throw new Error(`Server Create Timeout ${currentServerState}`);
+  }
+
+  // # return Server State ;
+  return currentServerState;
 }
+
+export const ServerDropDropCheck = async(
+  page:puppeteer.Page
+) =>{
+  let dropDown = await Puppeteer.explicitlyWaits(page,'.dropdown-menu');
+
+  await Array.prototype.reduce.call(dropDown,async(prev,curr,index)=>{
+    const nextItem = await prev;
+
+    const innerText = await Puppeteer.getProps(page,curr,'innerHTML');
+    console.log(await curr.isIntersectingViewport());
+    console.log(innerText);
+
+    return nextItem;
+  },Promise.resolve())
+}
+
+
 
 /**
  * VPC Server Settings

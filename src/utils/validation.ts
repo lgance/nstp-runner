@@ -18,6 +18,10 @@ import 'dotenv/config';
   ?PUB_REAL=console.ncloud.com
   ?PUB_BETA=
   ?PRODUCTION
+  test
+  dev
+  production
+    
 */
 /** fin, fin_Beta,gov,gov_beta,pu,pu_beta */
 function platformValidate(param:string) : void {
@@ -50,6 +54,7 @@ function platformValidate(param:string) : void {
   return url;
 }
 export const paramValidator = ()=>{
+  console.log(process.argv[6])
   if(process.env.NODE_ENV==='development'){
       Logger.info('Development Env');
   }
@@ -61,6 +66,10 @@ export const paramValidator = ()=>{
       Logger.error(`Current Param Password : ${process.argv[3]}`)    
       Logger.error(`Current Param Test Console : ${process.argv[4]}`)  
       throw new Error('Param Validation Error');  
+    }
+    else if(typeof process.argv[6]==="undefined"){
+      Logger.error('UUID is not Exist');
+      throw new Error('Required UUID Param');
     }
     let ID = process.argv[2];
     var emailReg = /^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$/i;
@@ -75,6 +84,8 @@ export const paramValidator = ()=>{
     for(let i=2;i<process.argv.length;i++){
       Logger.info(process.argv[i]);
     }
+    // global UUID variable
+    process.env.nstpUUID = process.argv[6];
   }
   
   return process.argv[4];

@@ -3,4 +3,6 @@ import { Logger } from './logger';
 import { moment} from './moment';
 import { paramValidator } from './validation';
 import { LoginConsole } from './login';
-export { Puppeteer, Logger, moment ,paramValidator,LoginConsole}
+import * as dbConnector from './dbServerConnector';
+export { Puppeteer, Logger, moment ,paramValidator,LoginConsole ,dbConnector }
+

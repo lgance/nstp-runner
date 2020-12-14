@@ -46,6 +46,21 @@ export const getBrowser = async(options:IOptions)=>{
   return browserSingleton;
 }
 
+export const dragDown = async  (
+  page:puppeteer.Page,
+  bounding_box:any
+)=>{
+
+ await page.mouse.move(bounding_box.x + bounding_box.width / 2, bounding_box.y + bounding_box.height / 2);
+await page.mouse.down();
+await page.mouse.move(126, 19);
+await page.mouse.up();
+  
+
+}
+
+
+
 export const confirmModalDialog = async (
   page:puppeteer.Page
 ) =>{
@@ -79,7 +94,7 @@ export const confirmModalDialog = async (
   }
 }
 
-
+ 
 export const modalCapture = async (page:puppeteer.Page,modalName:string)=>{
   await browserPage.screenshot({path:debugPath+modalName+'.png'});
 }
@@ -159,7 +174,6 @@ const classicCompute = {
 
 export const selectedPlatform = async(testplatform:string) =>{
   Logger.info(`[Selected] Platform ${testplatform}`);
-
 }
 
 /**
@@ -568,6 +582,7 @@ export const getProps = async (
     Logger.debug('innerText 의 빈값일 경우 textContents 로 다시 한번 더 찾습니다.');
     propertyHandle = await element.getProperty('textContents');
     propertyValue = await propertyHandle.jsonValue();
+    Logger.debug(`다시 찾은 값 ${propertyValue}`);
   }
   return props==='className' ? "."+propertyValue.replace(/\s/gi,".") : propertyValue;
 };

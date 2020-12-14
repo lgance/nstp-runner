@@ -1,22 +1,79 @@
 import puppeteer from 'puppeteer';
 import { PuppeteerExtra } from 'puppeteer-extra';
 import { Logger } from './logger';
+import * as dbConnector from './dbServerConnector';
 import * as Puppeteer from './puppeteer';
+
+
+/** Temporary Code */
+function waitTime(time){
+  return new Promise((resolve,reject)=>{
+    setTimeout(()=>{
+      resolve(true);
+    },time);
+  })
+}
 
 
 const isDebug = true;
 
+/**
+ * Login 과 Console 접속 두가지 TestCase가 있습니다.
+ * 1
+ * 2
+ */
 export const LoginConsole = async ()=>{
-   
-  const browser = await Puppeteer.getBrowser({isHeadless:false});
-  if(browser){
+
+
+
+  const id = process.argv[2];
+  const pw = process.argv[3];
+
+  if(process.env.DB_CONNECT==='use'){
+    const TestCase = [
+      {"title_idx":'1',"message":"로그인 액션 입니다."},
+      {"title_idx":'2',"message":"콘솔 이동 액션입니다."}
+    ];
+
+    // # Test Case 생성 
+    await TestCase.reduce(async(prev,curr,index)=>{
+      const nextItem = await prev;
+      
+      const sendObj = {
+        "title_idx":curr.title_idx,
+        "stepimage":"",
+        "pr_no":curr.title_idx,
+        "serv_no":curr.title_idx,
+        "message":curr.message,
+        "account":id,
+        "op":"WAIT"
+      }
+
+      await dbConnector.CreateAction(sendObj,process.env.nstpUUID);
+      
+      return nextItem;
+    },Promise.resolve())
+
+
+
+    await waitTime(5000);
+
+    // 로그인 Test 시작 
+    await dbConnector.UpdateAction({
+      'title_idx':"1",
+      "result":"",
+      "op":"RUNNING"
+    },process.env.nstpUUID)
+
+  }
+
+
+  const browser:any = await Puppeteer.getBrowser({isHeadless:false});
+
+  if(browser && typeof browser!=="undefined"){
     const context = await browser.createIncognitoBrowserContext();
     const page = await context.newPage();
-    
-    const id = process.argv[2];
-    const pw = process.argv[3];
     const url = process.env.url || 'https://console.ncloud.com';
-
     const isGoto = await Puppeteer.goto(page,url);
     if(!isGoto) process.exit(1);
 
@@ -41,12 +98,32 @@ export const LoginConsole = async ()=>{
 
         Logger.info('Login Button Action');
 
+
+
+
+
         // PasswordChangeCheck
         let currentURL = await page.url();
         let isDashBoard = await dashBoardCheck(currentURL,url);
 
+         // 로그인 성공 콘솔 접속 시작 
+         if(process.env.DB_CONNECT==='use'){
+          await dbConnector.UpdateAction({
+            'title_idx':"1",
+            "result":"P",
+            "op":"COMPLETE"
+          },process.env.nstpUUID);
+
+          await dbConnector.UpdateAction({
+            'title_idx':"2",
+            "result":"",
+            "op":"RUNNING"
+          },process.env.nstpUUID)
+        }
+
         if(isDashBoard){
           Logger.info(`🚧  Attempt to log in Successfully`);
+
           Logger.info(`Current URL ${currentURL}`);
           Logger.info(`Navigate URL ${url}`);
           await dimmedCloseActions(page);
@@ -75,7 +152,19 @@ export const LoginConsole = async ()=>{
         return true;
       }
     }
-    Puppeteer.setPage(page);
+    await Puppeteer.setPage(page);
+
+
+      // 로그인 성공 콘솔 접속 시작 
+      if(process.env.DB_CONNECT==='use'){
+        await dbConnector.UpdateAction({
+          'title_idx':"2",
+          "result":"P",
+          "op":"COMPLETE"
+        },process.env.nstpUUID)
+      }
+
+
     return true;
   }
   else{

@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import { Logger,Puppeteer } from '../../utils';
 
+import axios from 'axios';
 import { ServerAction } from './actions'
 /*
   enviornment : 테스트 환경 
@@ -70,7 +71,7 @@ const IAAS = async (testOptions : IIAASOptions) =>{
     let currPage = await Puppeteer.getPage();
     
     // false 면 바로 운영중 체크 함 
-    let isCreate = true;
+    let isCreate = false;
 
     Logger.info(`[ Test OS Image ] ${osImage}`)
     Logger.debug(`[ Test Env      ] ${environment}`)
@@ -131,10 +132,29 @@ const IAAS = async (testOptions : IIAASOptions) =>{
       }
       else{
         // # 서버 운영중 확인 
-       await ServerAction.ServerOperateCheck(currPage,"nstp-ee9f-ef3e-4605-a7f7");
+      //  await ServerAction.ServerOperateCheck(currPage,"nstp-ee9f-ef3e-4605-a7f7",true);
+      //  await ServerAction.ServerDropDropCheck(currPage);
 
+      console.log('test Drop Down');
+      
+      const isVisible = await currPage.evaluate(() => {
+        console.log('test DropDown');
+        const e = document.querySelector('.dropdown-menu');
+        if (!e)
+          return false;
+
+        const style = window.getComputedStyle(e);
+
+        console.log(style.perspectiveOrigin);  // 기대값 "105px 104.5px"
+
+        return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+      });
+
+        console.log(isVisible); // 기대값 'hidden'
+
+      
       }
-   
+
     }
     else{
       Logger.info(`LNB Result ${navigateURL}`);  
@@ -152,6 +172,44 @@ const IAAS = async (testOptions : IIAASOptions) =>{
  * Temporary Code
  * 
  */
+
+async function TestCaseSet(uuid){
+
+  const servNo = 99;
+  const prNo = 1;
+  const UUID = uuid;
+  const account = process.argv[2];
+  const op = 'WAIT';
+
+  const TestCaseArray =['1','2','100','101','102','103','104'];
+  // const TestCaseArray =['1'];
+  const TestSetURL = `${process.env.DB_MANAGER_SERVER}/action/${UUID}`
+  await TestCaseArray.forEach(async(item,index)=>{
+    const sendObj = {
+      "title_idx":item,
+      "stepimage":"",
+      "pr_no":prNo,
+      "serv_no":servNo,
+      "message":"서버 자동화 테스트",
+      "account":account,
+      "op":op
+    }
+    let tt = await axios.post(TestSetURL,{
+      sendObj
+    })
+  });
+
+}
+function waitTime(time){
+  return new Promise((resolve,reject)=>{
+    setTimeout(()=>{
+      resolve(true);
+    },time);
+  })
+}
+async function TestCaseUpdate(uuid){
+  
+}
 
 function createUUID(): string {
   let d = new Date().getTime();

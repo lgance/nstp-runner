@@ -11,6 +11,7 @@ import {
 
 const main = async ()=>{
   try{
+    
     /** NSTP Test Runner Param Validation */
     const TestConsole:string = paramValidator();
     /*
@@ -45,6 +46,7 @@ const main = async ()=>{
   }
 }
 main();
+
 
 /**
  * .env Sample
