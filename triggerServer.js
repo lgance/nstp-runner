@@ -15,7 +15,7 @@ app.get('/', (req, res) => {
 })
 app.put('/',async(req,res)=>{
   console.log(req);
-  res.send('PUt test');
+  res.send('Put test');
 })
 
 app.post('/',async(req,res)=>{
