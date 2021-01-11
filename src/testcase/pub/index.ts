@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { Logger,Puppeteer } from '../../utils';
+import { dbConnector, Logger,Puppeteer } from '../../utils';
 
 import axios from 'axios';
 import { ServerAction } from './actions'
@@ -70,18 +70,57 @@ const IAAS = async (testOptions : IIAASOptions) =>{
     let {osImage,testPlatform,environment} =testOptions;
     let currPage = await Puppeteer.getPage();
     
-    // false 면 바로 운영중 체크 함 
-    let isCreate = false;
+    // false 면 바로 운영중 체크 함  임시 코드
+    let isCreate = true;
+
+    if(process.env.DB_CONNECT==='use'){
+      const TestCase = [
+        {"title_idx":"100","message":"서버 생성 테스트 "},
+        {"title_idx":"101","message":"서버 정지 테스트 "},
+        {"title_idx":"102","message":"스펙 변경 테스트 "},
+        {"title_idx":"103","message":"서버 시작 테스트 "},
+        {"title_idx":"104","message":"서버 재시작 테스트 "},
+        {"title_idx":"105","message":"공인 IP 할당 및 접속 테스트 "},
+      ]
+      if(!isCreate){
+        TestCase.shift();
+      }
+      const id = process.argv[2];
+      // # Create Test Case
+      await TestCase.reduce(async(prev,curr,index)=>{
+        const nextItem = await prev;
+
+        const sendObj = {
+          "title_idx":curr.title_idx,
+          "stepimage":"",
+          "pr_no":curr.title_idx,
+          "serv_no":curr.title_idx,
+          "message":curr.message,
+          "account":id,
+          "op":"WAIT"
+        };
+
+        await dbConnector.CreateAction(sendObj,process.env.nstpUUID);
+        return nextItem;
+
+      },Promise.resolve());
+    }
+
+
+
 
     Logger.info(`[ Test OS Image ] ${osImage}`)
     Logger.debug(`[ Test Env      ] ${environment}`)
     Logger.debug(`[ Test Platform ] ${testPlatform}`)
 
+
+    
     /**
      * Navigate Server Page 
      */
     let navigateURL = await Puppeteer.navigateLNBMenu(['Server','Server'],testPlatform,environment);
     let diffArray = navigateURL.split('/');
+    let opState:string ='unKnown';
     if(diffArray[diffArray.length-1]==='server' ){
       Logger.info(`LNB Result ${navigateURL}`);
 
@@ -91,6 +130,16 @@ const IAAS = async (testOptions : IIAASOptions) =>{
         /**
          * 서버 생성 부터 최종확인 까지는 SPA 페이지로 구성되어있기 때문에 page.waitForNavigation 사용시 timeout 발생 
          */
+
+        // ? 테스트 시작
+        if(process.env.DB_CONNECT==='use'){
+          await dbConnector.UpdateAction({
+            'title_idx':'100',
+            'result':'N',
+            'op':'RUNNING'
+          },process.env.nstpUUID)
+        }
+
         // # 서버 생성 버튼
         await ServerAction.ConsoleCreateServer(currPage);
 
@@ -127,32 +176,56 @@ const IAAS = async (testOptions : IIAASOptions) =>{
         await ServerAction.Confirm(currPage);
 
         // # 서버 생성중 확인
-        await ServerAction.ServerOperateCheck(currPage,serverHostName);
+        opState = await ServerAction.ServerOperateCheck(currPage,serverHostName);
 
       }
       else{
+
+        //  nstp-0f4d-5e11-491b-9723	
         // # 서버 운영중 확인 
-      //  await ServerAction.ServerOperateCheck(currPage,"nstp-ee9f-ef3e-4605-a7f7",true);
+        opState = await ServerAction.ServerOperateCheck(currPage,"nstp-0f4d-5e11-491b-9723",true);
+
+       
       //  await ServerAction.ServerDropDropCheck(currPage);
 
-      console.log('test Drop Down');
       
-      const isVisible = await currPage.evaluate(() => {
-        console.log('test DropDown');
-        const e = document.querySelector('.dropdown-menu');
-        if (!e)
-          return false;
+      // const isVisible = await currPage.evaluate(() => {
+      //   console.log('test DropDown');
+      //   const e = document.querySelector('.dropdown-menu');
+      //   if (!e)
+      //     return false;
 
-        const style = window.getComputedStyle(e);
+      //   const style = window.getComputedStyle(e);
 
-        console.log(style.perspectiveOrigin);  // 기대값 "105px 104.5px"
+      //   console.log(style.perspectiveOrigin);  // 기대값 "105px 104.5px"
 
-        return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-      });
+      //   return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+      // });
 
-        console.log(isVisible); // 기대값 'hidden'
+      //   console.log(isVisible); // 기대값 'hidden'
 
       
+      }
+      let tempString="nstp-0f4d-5e11-491b-9723";
+
+      if(opState==='운영중'){
+
+        // # 서버 정지 
+        await ServerAction.ServerStop(currPage,tempString);
+        // # 서버 스펙 변경
+        await ServerAction.ServerSpecChange(currPage,tempString);
+        // # 서버 시작 
+        await ServerAction.ServerStart(currPage,tempString);
+        // # 서버 재시작
+        await ServerAction.ServerRestart(currPage,tempString);
+
+        // # 공인 IP 할당
+        await ServerAction.ServerAssociatedPublicIPandCheck(currPage,tempString);
+
+        // # 공인 IP 할당 및 접속
+        await ServerAction.ServerAssociatedPublicIPandConnect(currPage,tempString);
+
+
       }
 
     }

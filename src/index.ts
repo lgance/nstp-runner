@@ -18,7 +18,7 @@ const main = async ()=>{
      Safety Navigate Console
     */
     await LoginConsole();
-
+    
     switch(TestConsole.toUpperCase()){
       case 'PUB_BETA':
         await PUBLIC('beta');

@@ -54,8 +54,6 @@ export const LoginConsole = async ()=>{
       return nextItem;
     },Promise.resolve())
 
-
-
     await waitTime(5000);
 
     // 로그인 Test 시작 
@@ -97,10 +95,6 @@ export const LoginConsole = async ()=>{
         await page.waitForNavigation();
 
         Logger.info('Login Button Action');
-
-
-
-
 
         // PasswordChangeCheck
         let currentURL = await page.url();

@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
 import { PuppeteerExtra } from 'puppeteer-extra';
+import * as dbConnector from '../../../utils/dbServerConnector';;
 
 import {
   Logger,
@@ -72,44 +73,239 @@ function deleteSpaceString(string){
 }
 
 
+export const ServerSelect = async(
+  page:puppeteer.Page,
+  findServerHostName:string
+) => {
+  let isVisibleTable = await Puppeteer.explicitlyVisibleWait(page,'table.tbl.select-tbl');
+
+  if(!isVisibleTable){
+    Logger.error('ServerOperateCheck Error is not Display table');
+    throw new Error('ServerOperatedCheck is not Display table HTML');
+  }
+
+  let tableRowSelector = 'table.tbl.select-tbl > tbody';
+  let tableRowEles = await Puppeteer.explicitlyWaits(page,tableRowSelector);
+
+  let currentServerState='unKnown';
+  let selectFlag = false;
+
+  await Array.prototype.reduce.call(tableRowEles,async(prev,curr)=>{
+    let nextItem = await prev;
+
+    let notDetailRow:any = await Puppeteer.explicitlyWait(curr,'tr');
+
+    let notDetailRowColumn = await Puppeteer.explicitlyWaits(notDetailRow,'td');
+    let serverHostColumn = notDetailRowColumn[1];
+    let operateColumn = notDetailRowColumn[4];
+
+    let currServerHostName = await Puppeteer.getProps(page,serverHostColumn,'innerText');
+
+    if(deleteSpaceString(currServerHostName)===findServerHostName){
+      // Find HostName TD and CLick Table Row
+      await curr.click();
+      selectFlag = true;
+    }
+    return nextItem;
+},Promise.resolve());
 
 
- 
+  return selectFlag;
+
+}
+
+// # 서버 관리 및 설정 변경 Drop Down 
+export const ServerManageAndConfigurationButtonClick = async(
+  page:puppeteer.Page,
+  menu:string
+):Promise<boolean> =>{
+  let menuFlag = false;
 
 
-// 서버 정지
+
+
+  return menuFlag;
+
+}
+
+
+// 서버 정지 101
 export const ServerStop = async(
   page:puppeteer.Page,
   serverHostName:string
 ) => {
+  let testResult = 'N';
+  // ? 테스트 시작
+  if(process.env.DB_CONNECT==='use'){
+    await dbConnector.UpdateAction({
+      'title_idx':'101',
+      'result':testResult,
+      'op':'RUNNING'
+    },process.env.nstpUUID)
+  }
+
+  // * Test Process 
+  let next = await ServerSelect(page,serverHostName);
+  if(next===false){
+    testResult='F';
+    throw new Error ('Server Stop Test Case Fail [ Server Select Fail ]')
+  }
+  console.log(next);
+  next = await ServerManageAndConfigurationButtonClick(page,'시작');
+
+
+
+  await page.waitFor(2000);
+
+  // ? 테스트 종료 및 결과
+  await dbConnector.UpdateAction({
+    'title_idx':'101',
+    'result':testResult,
+    'op':'COMPLETE'
+  },process.env.nstpUUID)
 
 
 }
 
-// 서버 스펙 변경 
+// 서버 스펙 변경  102
 export const ServerSpecChange = async(
   page:puppeteer.Page,
   serverHostName:string
 ) => {
 
+  let testResult = 'N';
+  // ? 테스트 시작
+  if(process.env.DB_CONNECT==='use'){
+    await dbConnector.UpdateAction({
+      'title_idx':'102',
+      'result':testResult,
+      'op':'RUNNING'
+    },process.env.nstpUUID)
+  }
+
+  // * Test Process 
+
+
+
+  await page.waitFor(2000);
+
+
+
+  // ? 테스트 종료 및 결과
+  await dbConnector.UpdateAction({
+    'title_idx':'102',
+    'result':testResult,
+    'op':'COMPLETE'
+  },process.env.nstpUUID)
+
+
+
 }
 
-// 서버 재시작
+// 서버 시작 103
+export const ServerStart = async(
+  page:puppeteer.Page,
+  serverHostName:string
+) =>{
+
+  let testResult = 'N';
+  // ? 테스트 시작
+  if(process.env.DB_CONNECT==='use'){
+    await dbConnector.UpdateAction({
+      'title_idx':'103',
+      'result':testResult,
+      'op':'RUNNING'
+    },process.env.nstpUUID)
+  }
+
+  // * Test Process 
+
+  await page.waitFor(2000);
+
+
+
+
+  if(process.env.DB_CONNECT==='use'){
+    // ? 테스트 종료 및 결과
+    await dbConnector.UpdateAction({
+      'title_idx':'103',
+      'result':testResult,
+      'op':'COMPLETE'
+    },process.env.nstpUUID)
+  }
+
+
+}
+// 서버 재시작 104
 export const ServerRestart = async(
   page:puppeteer.Page,
   serverHostName:string
 ) => {
+  let testResult = 'N';
+  // ? 테스트 시작
+  if(process.env.DB_CONNECT==='use'){
+    await dbConnector.UpdateAction({
+      'title_idx':'104',
+      'result':testResult,
+      'op':'RUNNING'
+    },process.env.nstpUUID)
+  }
 
+  // * Test Process 
+
+
+
+  await page.waitFor(2000);
+
+
+  if(process.env.DB_CONNECT==='use'){
+    // ? 테스트 종료 및 결과
+    await dbConnector.UpdateAction({
+      'title_idx':'104',
+      'result':testResult,
+      'op':'COMPLETE'
+    },process.env.nstpUUID)
+  }
 }
 
-// 공인 IP 할당 및 확인
+// 공인 IP 할당 및 확인 105 -> 임시 기능 
 export const ServerAssociatedPublicIPandCheck = async(
   page:puppeteer.Page,
   serverHostName:string
 ) => {
 
+
+  let testResult = 'N';
+  // ? 테스트 시작
+  if(process.env.DB_CONNECT==='use'){
+    await dbConnector.UpdateAction({
+      'title_idx':'105',
+      'result':testResult,
+      'op':'RUNNING'
+    },process.env.nstpUUID)
+  }
+
+  // * Test Process 
+
+
+
+  await page.waitFor(2000);
+
+
+
+  if(process.env.DB_CONNECT==='use'){
+    // ? 테스트 종료 및 결과
+    await dbConnector.UpdateAction({
+      'title_idx':'105',
+      'result':testResult,
+      'op':'COMPLETE'
+    },process.env.nstpUUID)
+  }
+
+
+
 }
-// 공인 IP 할당 및 접속 
+// 공인 IP 할당 및 접속 105
 export const ServerAssociatedPublicIPandConnect = async(
   page:puppeteer.Page,
   serverHostName:string
@@ -468,6 +664,14 @@ export const Confirm = async(
   if(modalDialogBtn!==false && typeof modalDialogBtn!=="boolean"){
     await Puppeteer.modalCapture(page,'serverCreate Confirm');
     await modalDialogBtn.click();
+    if(process.env.DB_CONNECT==='use'){
+      // ? 테스트 종료 및 결과
+      await dbConnector.UpdateAction({
+        'title_idx':'100',
+        'result':'P',
+        'op':'COMPLETE'
+      },process.env.nstpUUID)
+    }
   }
   else{
     Logger.error('Not Display Modal Dialog Button');
@@ -475,16 +679,30 @@ export const Confirm = async(
 
 }
 
+interface IOperateCheck {
+  expectedOperation?:string
+
+}
+
+
 export const ServerOperateCheck = async(
   page:puppeteer.Page,
   findServerHostName:string,
-  checkFlag=false
+  checkFlag=false 
 )=>{
 
   let isVisibleTable = await Puppeteer.explicitlyVisibleWait(page,'table.tbl.select-tbl');
 
   if(!isVisibleTable){
     Logger.error('ServerOperateCheck Error is not Display table');
+    if(process.env.DB_CONNECT==='use'){
+      // ? 테스트 종료 및 결과
+      await dbConnector.UpdateAction({
+        'title_idx':'100',
+        'result':'F',
+        'op':'COMPLETE'
+      },process.env.nstpUUID)
+    }
     throw new Error('ServerOperatedCheck is not Display table HTML');
   }
 
