@@ -1,6 +1,7 @@
 const express = require('express')
 const {spawn,exec} = require('child_process');
 
+ const { Worker, isMainThread } = require('worker_threads');
 const app = express();
 const port = 7070;
 
@@ -13,6 +14,27 @@ app.get('/', (req, res) => {
   
   res.send('Hello World!')
 })
+
+app.get('/worker',(req,res)=>{
+
+  console.log(`[Master] ${isMainThread}`);
+
+  const runner = new Worker('./dist/index.js');
+
+  runner.on('message',(msg)=>{
+    console.log(msg);
+  })
+
+  console.log('자동화 테스트 메시지 시작');
+  runner.postMessage('자동화 테스트를 시작합니다.');
+
+
+  res.send('Worker Test');
+});
+
+
+
+
 app.put('/',async(req,res)=>{
   console.log(req);
   res.send('Put test');

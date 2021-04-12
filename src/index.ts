@@ -5,12 +5,24 @@ import {
   Puppeteer
 } from './utils';
 
+import { Worker, isMainThread,parentPort} from 'worker_threads';
+
 import {
   PUBLIC
 } from './app';
 
+
 const main = async ()=>{
   try{
+    
+    Logger.info(`Master ${isMainThread}`);
+
+    parentPort?.on('message',(msg)=>{
+      Logger.info('받은 명령');
+      Logger.info(msg);
+      
+      parentPort?.postMessage(`${msg} 시작 한다 해 `);
+    });
     
     /** NSTP Test Runner Param Validation */
     const TestConsole:string = paramValidator();
