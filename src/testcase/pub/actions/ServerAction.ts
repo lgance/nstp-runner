@@ -485,49 +485,54 @@ let serverSettingObj = {
   "InitScript":async function(){}
 }
 
-export const SettingsServer  = async(
+export const SettingsServer  = (
   page:puppeteer.Page,
   settings : IIAASSettings            
 ) =>{
-  console.log('Settings Classic Server');
-  console.log(`ServerName ${settings.ServerName}`);
+return new Promise(async (resolve,reject)=>{
+    try {
+      console.log('Settings Classic Server');
+      console.log(`ServerName ${settings.ServerName}`);
 
-  const rowSelector = 'div.server-create-set-up-server div.box-body div.form-group.row';
+      const rowSelector = 'div.server-create-set-up-server div.box-body div.form-group.row';
 
-  const rootDiv:any= await Puppeteer.explicitlyVisibleWait(page,rowSelector,3,1000);
-  if(!rootDiv){
-    Logger.error('Root Div is not Visible ');
-    throw new Error ('server Settings Error');
-  }
-
-
-  let settingKeys = Object.keys(serverSettingObj);
-  await Array.prototype.reduce.call(settingKeys,async(prev,curr,index,arr)=>{
-    let nextItem = await prev;
-
-    if(typeof settings[curr]==='undefined'){
-      // console.log(`Not Exist  ${curr}`);
-    }
-    else{
-      await serverSettingObj[curr](page,settings[curr]);
-    }
-
-    return nextItem;
-  },Promise.resolve())
-
-  console.log('Complete Settings Server');
-  
-  
-  let buttonEles = await Puppeteer.explicitlyWaits(page,'div.server-create-set-up-server button[type=button]');
-  await Array.prototype.reduce.call(buttonEles,async(prev,curr,index,arr)=>{
-    let nextItem = await prev;
-      let innerText = await Puppeteer.getProps(page,curr,'innerText');
-      if(deleteSpaceString(innerText)==="다음"){
-         await curr.click();
+      const rootDiv:any= await Puppeteer.explicitlyVisibleWait(page,rowSelector,3,1000);
+      if(!rootDiv){
+        Logger.error('Root Div is not Visible ');
+        throw new Error ('server Settings Error');
       }
-    return nextItem;
-  },Promise.resolve());
 
+
+      let settingKeys = Object.keys(serverSettingObj);
+      await Array.prototype.reduce.call(settingKeys,async(prev,curr,index,arr)=>{
+        let nextItem = await prev;
+
+        if(typeof settings[curr]==='undefined'){
+          // console.log(`Not Exist  ${curr}`);
+        }
+        else{
+          await serverSettingObj[curr](page,settings[curr]);
+        }
+
+        return nextItem;
+      },Promise.resolve())
+
+      console.log('Complete Settings Server');
+      
+      
+      let buttonEles = await Puppeteer.explicitlyWaits(page,'div.server-create-set-up-server button[type=button]');
+      await Array.prototype.reduce.call(buttonEles,async(prev,curr,index,arr)=>{
+        let nextItem = await prev;
+          let innerText = await Puppeteer.getProps(page,curr,'innerText');
+          if(deleteSpaceString(innerText)==="다음"){
+            await curr.click();
+          }
+        return nextItem;
+      },Promise.resolve());
+    } catch (error) {
+    
+    }
+  })
 }
 
 

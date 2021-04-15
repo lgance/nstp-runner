@@ -11,18 +11,9 @@ import {
   PUBLIC
 } from './app';
 
-
+// npm start idpw@naver.com ##### pub_beta classic UUID
 const main = async ()=>{
   try{
-    
-    Logger.info(`Master ${isMainThread}`);
-
-    parentPort?.on('message',(msg)=>{
-      Logger.info('받은 명령');
-      Logger.info(msg);
-      
-      parentPort?.postMessage(`${msg} 시작 한다 해 `);
-    });
     
     /** NSTP Test Runner Param Validation */
     const TestConsole:string = paramValidator();

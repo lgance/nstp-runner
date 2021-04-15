@@ -58,9 +58,6 @@ interface IIAASOptions {
   osImage:string;  
 }
 
-
-
-
 let serverHostName = createUUID();
 /**
  * IAAS ( Compute ) Automation Function 
@@ -106,14 +103,9 @@ const IAAS = async (testOptions : IIAASOptions) =>{
       },Promise.resolve());
     }
 
-
-
-
     Logger.info(`[ Test OS Image ] ${osImage}`)
     Logger.debug(`[ Test Env      ] ${environment}`)
     Logger.debug(`[ Test Platform ] ${testPlatform}`)
-
-
     
     /**
      * Navigate Server Page 
